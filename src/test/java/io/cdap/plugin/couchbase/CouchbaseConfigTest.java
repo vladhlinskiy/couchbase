@@ -54,6 +54,9 @@ public class CouchbaseConfigTest {
     .setPassword("password")
     .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
     .setSchema(VALID_SCHEMA.toString())
+    .setScanConsistency(Consistency.NOT_BOUNDED.getDisplayName())
+    .setMaxParallelism(0)
+    .setQueryTimeout(600)
     .build();
 
   @Test
@@ -247,6 +250,60 @@ public class CouchbaseConfigTest {
       Assert.assertEquals(1, validationFailure.getCauses().size());
       ValidationFailure.Cause cause = validationFailure.getCauses().get(0);
       Assert.assertEquals(CouchbaseConstants.ON_ERROR, cause.getAttribute(CauseAttributes.STAGE_CONFIG));
+      Assert.assertEquals(MOCK_STAGE_NAME, cause.getAttribute(STAGE));
+    }
+  }
+
+  @Test
+  public void testValidateScanConsistencyNull() {
+    try {
+      CouchbaseConfigBuilder.builder(VALID_CONFIG)
+        .setScanConsistency(null)
+        .build()
+        .validate(new MockFailureCollector(MOCK_STAGE_NAME));
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      ValidationFailure validationFailure = e.getFailures().get(0);
+      Assert.assertEquals("Scan consistency must be specified", validationFailure.getMessage());
+      Assert.assertEquals(1, validationFailure.getCauses().size());
+      ValidationFailure.Cause cause = validationFailure.getCauses().get(0);
+      Assert.assertEquals(CouchbaseConstants.SCAN_CONSISTENCY, cause.getAttribute(CauseAttributes.STAGE_CONFIG));
+      Assert.assertEquals(MOCK_STAGE_NAME, cause.getAttribute(STAGE));
+    }
+  }
+
+  @Test
+  public void testValidateScanConsistencyEmpty() {
+    try {
+      CouchbaseConfigBuilder.builder(VALID_CONFIG)
+        .setScanConsistency("")
+        .build()
+        .validate(new MockFailureCollector(MOCK_STAGE_NAME));
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      ValidationFailure validationFailure = e.getFailures().get(0);
+      Assert.assertEquals("Scan consistency must be specified", validationFailure.getMessage());
+      Assert.assertEquals(1, validationFailure.getCauses().size());
+      ValidationFailure.Cause cause = validationFailure.getCauses().get(0);
+      Assert.assertEquals(CouchbaseConstants.SCAN_CONSISTENCY, cause.getAttribute(CauseAttributes.STAGE_CONFIG));
+      Assert.assertEquals(MOCK_STAGE_NAME, cause.getAttribute(STAGE));
+    }
+  }
+
+  @Test
+  public void testValidateScanConsistencyInvalid() {
+    try {
+      CouchbaseConfigBuilder.builder(VALID_CONFIG)
+        .setScanConsistency("unknown-scan-consistency")
+        .build()
+        .validate(new MockFailureCollector(MOCK_STAGE_NAME));
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      ValidationFailure validationFailure = e.getFailures().get(0);
+      Assert.assertEquals("Invalid scan consistency name", validationFailure.getMessage());
+      Assert.assertEquals(1, validationFailure.getCauses().size());
+      ValidationFailure.Cause cause = validationFailure.getCauses().get(0);
+      Assert.assertEquals(CouchbaseConstants.SCAN_CONSISTENCY, cause.getAttribute(CauseAttributes.STAGE_CONFIG));
       Assert.assertEquals(MOCK_STAGE_NAME, cause.getAttribute(STAGE));
     }
   }

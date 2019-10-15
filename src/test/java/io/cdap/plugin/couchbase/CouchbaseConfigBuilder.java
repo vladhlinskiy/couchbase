@@ -28,6 +28,9 @@ public class CouchbaseConfigBuilder {
   protected String password;
   protected String onError;
   protected String schema;
+  protected Integer maxParallelism;
+  protected String scanConsistency;
+  protected Integer timeout;
 
   public static CouchbaseConfigBuilder builder() {
     return new CouchbaseConfigBuilder();
@@ -42,6 +45,9 @@ public class CouchbaseConfigBuilder {
       .setUser(original.getUser())
       .setPassword(original.getPassword())
       .setOnError(original.getErrorHandling() == null ? null : original.getErrorHandling().getDisplayName())
+      .setMaxParallelism(original.getMaxParallelism())
+      .setScanConsistency(original.getScanConsistency() == null ? null : original.getScanConsistency().getDisplayName())
+      .setQueryTimeout(original.getTimeout())
       .setSchema(original.getSchema());
   }
 
@@ -80,12 +86,28 @@ public class CouchbaseConfigBuilder {
     return this;
   }
 
+  public CouchbaseConfigBuilder setMaxParallelism(Integer maxParallelism) {
+    this.maxParallelism = maxParallelism;
+    return this;
+  }
+
+  public CouchbaseConfigBuilder setScanConsistency(String scanConsistency) {
+    this.scanConsistency = scanConsistency;
+    return this;
+  }
+
+  public CouchbaseConfigBuilder setQueryTimeout(Integer timeout) {
+    this.timeout = timeout;
+    return this;
+  }
+
   public CouchbaseConfigBuilder setSchema(String schema) {
     this.schema = schema;
     return this;
   }
 
   public CouchbaseConfig build() {
-    return new CouchbaseConfig(referenceName, nodes, bucket, query, user, password, onError, schema);
+    return new CouchbaseConfig(referenceName, nodes, bucket, query, user, password, onError, schema, maxParallelism,
+                               scanConsistency, timeout);
   }
 }

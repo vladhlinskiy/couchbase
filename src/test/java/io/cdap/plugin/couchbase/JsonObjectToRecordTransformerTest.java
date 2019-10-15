@@ -48,6 +48,7 @@ public class JsonObjectToRecordTransformerTest {
     config = CouchbaseConfigBuilder.builder()
       .setQuery("SELECT name FROM `test`")
       .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
+      .setScanConsistency(Consistency.NOT_BOUNDED.getDisplayName())
       .build();
   }
 

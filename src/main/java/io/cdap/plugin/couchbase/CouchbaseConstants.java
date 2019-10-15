@@ -65,4 +65,21 @@ public class CouchbaseConstants {
    * failed to parse value according to a provided schema.
    */
   public static final String ON_ERROR = "on-error";
+
+  /**
+   * Configuration property name used to specify maximum number of CPU cores can be used to process a query.
+   * If the specified value is less than zero or greater than the total number of cores in a cluster, the system will
+   * use all available cores in the cluster.
+   */
+  public static final String MAX_PARALLELISM = "maxParallelism";
+
+  /**
+   * Configuration property name used to specify the consistency guarantee or constraint for index scanning.
+   */
+  public static final String SCAN_CONSISTENCY = "consistency";
+
+  /**
+   * Configuration property name used to specify number of seconds to wait before a timeout has occurred on a query.
+   */
+  public static final String QUERY_TIMEOUT = "timeout";
 }

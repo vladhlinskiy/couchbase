@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 /**
  * RecordReader implementation, which reads N1qlQueryRow entries.
@@ -67,9 +68,13 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
     this.bucket = cluster.openBucket(config.getBucket());
 
     LOG.trace("Executing query split: {}", config.getQuery());
-    N1qlQueryResult result = bucket.query(
-      N1qlQuery.simple(config.getQuery())
-    );
+
+    N1qlQuery query = N1qlQuery.simple(config.getQuery());
+    query.params().consistency(config.getScanConsistency().getScanConsistency())
+      .maxParallelism(config.getMaxParallelism())
+      .serverSideTimeout(config.getTimeout(), TimeUnit.SECONDS);
+
+    N1qlQueryResult result = bucket.query(query);
 
     if (!result.finalSuccess()) {
       throw new CouchbaseExecutionException(result.errors());

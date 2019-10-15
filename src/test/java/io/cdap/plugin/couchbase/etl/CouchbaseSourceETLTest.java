@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.couchbase.Consistency;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
 import io.cdap.plugin.couchbase.ErrorHandling;
 import org.junit.Assert;
@@ -223,6 +224,9 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       .put(CouchbaseConstants.ON_ERROR, ErrorHandling.FAIL_PIPELINE.getDisplayName())
       .put(CouchbaseConstants.SCHEMA, schema.toString())
       .put(CouchbaseConstants.QUERY, query)
+      .put(CouchbaseConstants.MAX_PARALLELISM, "0")
+      .put(CouchbaseConstants.SCAN_CONSISTENCY, Consistency.NOT_BOUNDED.getDisplayName())
+      .put(CouchbaseConstants.QUERY_TIMEOUT, "600")
       .build();
   }
 }
