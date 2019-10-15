@@ -140,6 +140,21 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
   }
 
   @Test
+  public void testSourceSingleField() throws Exception {
+    String bucketName = BASE_PROPERTIES.get(CouchbaseConstants.BUCKET);
+    String query = String.format("SELECT created from `%s` ORDER BY created", bucketName);
+    Schema schema = Schema.recordOf("inner-object-schema", Schema.Field.of("created", Schema.of(Schema.Type.LONG)));
+    Map<String, String> properties = sourceProperties(query, schema);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (int i = 0; i < TEST_DOCUMENTS.size(); i++) {
+      JsonObject content = TEST_DOCUMENTS.get(i).content();
+      StructuredRecord actual = records.get(i);
+      Assert.assertEquals(content.getLong("created"), actual.<Long>get("created"));
+    }
+  }
+
+  @Test
   public void testSourceIncludeId() throws Exception {
     String bucketName = BASE_PROPERTIES.get(CouchbaseConstants.BUCKET);
     String query = String.format("SELECT meta(`%s`).id, * from `%s` ORDER BY created", bucketName, bucketName);

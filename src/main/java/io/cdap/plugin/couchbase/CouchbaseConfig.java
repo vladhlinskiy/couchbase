@@ -93,13 +93,14 @@ public class CouchbaseConfig extends PluginConfig {
   private String schema;
 
   public CouchbaseConfig(String referenceName, String nodes, String bucket, String query, String user,
-                         String password, String schema) {
+                         String password, String onError, String schema) {
     this.referenceName = referenceName;
     this.nodes = nodes;
     this.bucket = bucket;
     this.query = query;
     this.user = user;
     this.password = password;
+    this.onError = onError;
     this.schema = schema;
   }
 
@@ -168,8 +169,6 @@ public class CouchbaseConfig extends PluginConfig {
    * @param collector failure collector.
    */
   public void validate(FailureCollector collector) {
-    // TODO review corrective actions
-    // TODO unit test
     if (Strings.isNullOrEmpty(referenceName)) {
       collector.addFailure("Reference name must be specified", null)
         .withConfigProperty(Constants.Reference.REFERENCE_NAME);
@@ -183,25 +182,43 @@ public class CouchbaseConfig extends PluginConfig {
       }
     }
     if (!containsMacro(CouchbaseConstants.NODES) && Strings.isNullOrEmpty(nodes)) {
-      collector.addFailure("Couchbase nodes must be specified", "Specify valid Couchbase nodes")
+      collector.addFailure("Couchbase nodes must be specified", null)
         .withConfigProperty(CouchbaseConstants.NODES);
     }
     if (!containsMacro(CouchbaseConstants.BUCKET) && Strings.isNullOrEmpty(bucket)) {
-      collector.addFailure("Bucket name must be specified", "Specify valid bucket name")
+      collector.addFailure("Bucket name must be specified", null)
         .withConfigProperty(CouchbaseConstants.BUCKET);
+    }
+    if (!containsMacro(CouchbaseConstants.QUERY) && Strings.isNullOrEmpty(query)) {
+      collector.addFailure("Query must be specified", null)
+        .withConfigProperty(CouchbaseConstants.QUERY);
+    }
+    if (!containsMacro(CouchbaseConstants.USERNAME) && !containsMacro(CouchbaseConstants.PASSWORD) &&
+      Strings.isNullOrEmpty(user) && !Strings.isNullOrEmpty(password)) {
+      collector.addFailure("Username must be specified", null)
+        .withConfigProperty(CouchbaseConstants.USERNAME);
+    }
+    if (!containsMacro(CouchbaseConstants.USERNAME) && !containsMacro(CouchbaseConstants.PASSWORD) &&
+      !Strings.isNullOrEmpty(user) && Strings.isNullOrEmpty(password)) {
+      collector.addFailure("Password must be specified", null)
+        .withConfigProperty(CouchbaseConstants.PASSWORD);
     }
     if (!containsMacro(CouchbaseConstants.ON_ERROR)) {
       if (Strings.isNullOrEmpty(onError)) {
-        collector.addFailure("Error handling must be specified", "Specify error handling")
-          .withConfigProperty(CouchbaseConstants.BUCKET);
-      }
-      if (ErrorHandling.fromDisplayName(onError) == null) {
+        collector.addFailure("Error handling must be specified", null)
+          .withConfigProperty(CouchbaseConstants.ON_ERROR);
+      } else if (ErrorHandling.fromDisplayName(onError) == null) {
         collector.addFailure("Invalid record error handling strategy name",
                              "Specify valid error handling strategy name")
-          .withConfigProperty(CouchbaseConstants.BUCKET);
+          .withConfigProperty(CouchbaseConstants.ON_ERROR);
       }
     }
-    if (!Strings.isNullOrEmpty(schema) && !containsMacro(CouchbaseConstants.SCHEMA)) {
+    // TODO Couchbase Server 4.5 introduces INFER, a N1QL statement that infers the metadata of documents.
+    // This can be used to infer the Output Schema.
+    if (!containsMacro(CouchbaseConstants.SCHEMA) && Strings.isNullOrEmpty(schema)) {
+      collector.addFailure("Output schema must be specified", null)
+        .withConfigProperty(CouchbaseConstants.SCHEMA);
+    } else if (!containsMacro(CouchbaseConstants.SCHEMA)) {
       Schema parsedSchema = getParsedSchema();
       validateSchema(parsedSchema, collector);
     }
@@ -209,28 +226,67 @@ public class CouchbaseConfig extends PluginConfig {
     collector.getOrThrowException();
   }
 
-  private void validateSchema(Schema parsedSchema, FailureCollector collector) {
-    List<Schema.Field> fields = parsedSchema.getFields();
+  private void validateSchema(Schema schema, FailureCollector collector) {
+    List<Schema.Field> fields = schema.getFields();
     if (null == fields || fields.isEmpty()) {
       collector.addFailure("Schema must contain at least one field", null)
         .withConfigProperty(CouchbaseConstants.SCHEMA);
       collector.getOrThrowException();
     }
     for (Schema.Field field : fields) {
-      Schema nonNullableSchema = field.getSchema().isNullable() ?
-        field.getSchema().getNonNullable() : field.getSchema();
-      Schema.Type type = nonNullableSchema.getType();
-      Schema.LogicalType logicalType = nonNullableSchema.getLogicalType();
-      if (!SUPPORTED_SIMPLE_TYPES.contains(type) && !SUPPORTED_LOGICAL_TYPES.contains(logicalType)) {
-        String supportedTypeNames = Stream.concat(
-          SUPPORTED_SIMPLE_TYPES.stream().map(Enum::name).map(String::toLowerCase),
-          SUPPORTED_LOGICAL_TYPES.stream().map(Schema.LogicalType::getToken)
-        ).collect(Collectors.joining(", "));
-        String errorMessage = String.format("Field '%s' is of unsupported type '%s'. Supported types are: %s",
-                                            field.getName(), nonNullableSchema.getDisplayName(), supportedTypeNames);
-        collector.addFailure(errorMessage, String.format("Change field '%s' to be a supported type", field.getName()))
-          .withOutputSchemaField(field.getName(), null);
-      }
+      validateFieldSchema(field.getName(), field.getSchema(), collector);
     }
+  }
+
+  private void validateFieldSchema(String fieldName, Schema schema, FailureCollector collector) {
+    Schema nonNullableSchema = schema.isNullable() ? schema.getNonNullable() : schema;
+    Schema.Type type = nonNullableSchema.getType();
+    switch (type) {
+      case RECORD:
+        validateSchema(nonNullableSchema, collector);
+        break;
+      case ARRAY:
+        validateArraySchema(fieldName, nonNullableSchema, collector);
+        break;
+      case MAP:
+        validateMapSchema(fieldName, nonNullableSchema, collector);
+        break;
+      default:
+        validateSchemaType(fieldName, nonNullableSchema, collector);
+    }
+  }
+
+  private void validateMapSchema(String fieldName, Schema schema, FailureCollector collector) {
+    Schema keySchema = schema.getMapSchema().getKey();
+    if (keySchema.isNullable() || keySchema.getType() != Schema.Type.STRING) {
+      collector.addFailure("Map keys must be a non-nullable string",
+                           String.format("Change field '%s' to be a non-nullable string", fieldName))
+        .withOutputSchemaField(fieldName, null);
+    }
+    validateFieldSchema(fieldName, schema.getMapSchema().getValue(), collector);
+  }
+
+  private void validateArraySchema(String fieldName, Schema schema, FailureCollector collector) {
+    Schema componentSchema = schema.getComponentSchema().isNullable() ? schema.getComponentSchema().getNonNullable()
+      : schema.getComponentSchema();
+    validateFieldSchema(fieldName, componentSchema, collector);
+  }
+
+  private void validateSchemaType(String fieldName, Schema fieldSchema, FailureCollector collector) {
+    Schema.Type type = fieldSchema.getType();
+    Schema.LogicalType logicalType = fieldSchema.getLogicalType();
+    if (SUPPORTED_SIMPLE_TYPES.contains(type) || SUPPORTED_LOGICAL_TYPES.contains(logicalType)) {
+      return;
+    }
+
+    String supportedTypeNames = Stream.concat(
+      SUPPORTED_SIMPLE_TYPES.stream().map(Enum::name).map(String::toLowerCase),
+      SUPPORTED_LOGICAL_TYPES.stream().map(Schema.LogicalType::getToken)
+    ).collect(Collectors.joining(", "));
+
+    String errorMessage = String.format("Field '%s' is of unsupported type '%s'. Supported types are: %s",
+                                        fieldName, fieldSchema.getDisplayName(), supportedTypeNames);
+    collector.addFailure(errorMessage, String.format("Change field '%s' to be a supported type", fieldName))
+      .withOutputSchemaField(fieldName, null);
   }
 }
