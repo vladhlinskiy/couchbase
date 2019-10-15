@@ -13,38 +13,29 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package io.cdap.plugin.couchbase.exception;
 
-package io.cdap.plugin.couchbase.source;
+import com.couchbase.client.java.document.json.JsonObject;
 
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.InputSplit;
-
-import java.io.DataInput;
-import java.io.DataOutput;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * TODO investigate possible options for splitter implementation
- * A no-op split.
+ * Runtime Couchbase execution exception thrown when there were errors during execution of Couchbase operations or
+ * commands.
  */
-public class NoOpSplit extends InputSplit implements Writable {
-  public NoOpSplit() {
+public class CouchbaseExecutionException extends RuntimeException {
+
+  private final List<JsonObject> errors;
+
+  public CouchbaseExecutionException(List<JsonObject> errors) {
+    this.errors = errors;
   }
 
   @Override
-  public void readFields(DataInput dataInput) {
-  }
-
-  @Override
-  public void write(DataOutput dataOutput) {
-  }
-
-  @Override
-  public long getLength() {
-    return 0;
-  }
-
-  @Override
-  public String[] getLocations() {
-    return new String[0];
+  public String getMessage() {
+    return errors.stream()
+      .map(JsonObject::toString)
+      .collect(Collectors.joining("\n"));
   }
 }

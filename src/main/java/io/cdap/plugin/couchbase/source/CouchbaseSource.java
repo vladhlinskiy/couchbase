@@ -83,7 +83,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
     Schema schema = context.getOutputSchema();
-    this.transformer = new JsonObjectToRecordTransformer(schema);
+    this.transformer = new JsonObjectToRecordTransformer(config, schema);
   }
 
   @Override

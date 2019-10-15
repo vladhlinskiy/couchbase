@@ -33,9 +33,8 @@ Data Types Mapping
     | Couchbase Data Type             | CDAP Schema Data Type                             |
     | ------------------------------- | ------------------------------------------------- |
     | Boolean                         | boolean                                           |
-    | Number                          | int. long, float, double, decimal                 |
+    | Number                          | int, long, double, decimal                        |
     | String                          | string                                            |
     | Object                          | record, map                                       |
-    | Date                            | timestamp                                         |
     | Array                           | array                                             |
     

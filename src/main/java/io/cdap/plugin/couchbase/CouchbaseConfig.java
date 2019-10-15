@@ -43,14 +43,12 @@ import javax.annotation.Nullable;
  */
 public class CouchbaseConfig extends PluginConfig {
 
-  // TODO review
   private static final Set<Schema.Type> SUPPORTED_SIMPLE_TYPES = ImmutableSet.of(Schema.Type.BOOLEAN, Schema.Type.INT,
-                                                                                 Schema.Type.FLOAT, Schema.Type.DOUBLE,
-                                                                                 Schema.Type.BYTES, Schema.Type.LONG,
-                                                                                 Schema.Type.STRING);
+                                                                                 Schema.Type.DOUBLE, Schema.Type.LONG,
+                                                                                 Schema.Type.STRING, Schema.Type.RECORD,
+                                                                                 Schema.Type.ARRAY, Schema.Type.MAP);
 
-  private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(
-    Schema.LogicalType.DECIMAL, Schema.LogicalType.TIMESTAMP_MILLIS, Schema.LogicalType.TIMESTAMP_MICROS);
+  private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(Schema.LogicalType.DECIMAL);
 
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
@@ -171,6 +169,7 @@ public class CouchbaseConfig extends PluginConfig {
    */
   public void validate(FailureCollector collector) {
     // TODO review corrective actions
+    // TODO unit test
     if (Strings.isNullOrEmpty(referenceName)) {
       collector.addFailure("Reference name must be specified", null)
         .withConfigProperty(Constants.Reference.REFERENCE_NAME);

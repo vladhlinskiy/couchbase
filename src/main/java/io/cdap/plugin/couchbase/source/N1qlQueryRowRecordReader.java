@@ -21,14 +21,18 @@ import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.query.N1qlQuery;
 import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.N1qlQueryRow;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.cdap.plugin.couchbase.CouchbaseConfig;
+import io.cdap.plugin.couchbase.exception.CouchbaseExecutionException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -37,9 +41,10 @@ import java.util.Iterator;
  * RecordReader implementation, which reads N1qlQueryRow entries.
  */
 public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQueryRow> {
-
+  private static final Logger LOG = LoggerFactory.getLogger(N1qlQueryRowRecordReader.class);
   private static final Gson gson = new GsonBuilder().create();
 
+  private Bucket bucket;
   private Iterator<N1qlQueryRow> iterator;
   private N1qlQueryRow value;
 
@@ -55,17 +60,21 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
     String configJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
     CouchbaseConfig config = gson.fromJson(configJson, CouchbaseConfig.class);
 
-    // TODO
-    Cluster cluster = CouchbaseCluster.create(config.getNodes());
-    cluster.authenticate(config.getUser(), config.getPassword());
-    Bucket bucket = cluster.openBucket(config.getBucket());
+    Cluster cluster = CouchbaseCluster.create(config.getNodeList());
+    if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
+      cluster.authenticate(config.getUser(), config.getPassword());
+    }
+    this.bucket = cluster.openBucket(config.getBucket());
 
-    // Perform a N1QL Query
+    LOG.trace("Executing query split: {}", config.getQuery());
     N1qlQueryResult result = bucket.query(
       N1qlQuery.simple(config.getQuery())
     );
 
-    // TODO result error handling
+    if (!result.finalSuccess()) {
+      throw new CouchbaseExecutionException(result.errors());
+    }
+
     this.iterator = result.rows();
   }
 
@@ -96,5 +105,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
 
   @Override
   public void close() throws IOException {
+    LOG.trace("Closing Record reader");
+    this.bucket.close();
   }
 }
