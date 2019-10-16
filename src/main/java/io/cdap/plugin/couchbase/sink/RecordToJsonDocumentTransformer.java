@@ -25,13 +25,13 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
  */
 public class RecordToJsonDocumentTransformer {
 
-  private final String idFieldName;
+  private final String keyField;
 
   /**
-   * @param idFieldName specifies which of the incoming fields should be used as an document identifier.
+   * @param keyField specifies which of the incoming fields should be used as an document identifier.
    */
-  public RecordToJsonDocumentTransformer(String idFieldName) {
-    this.idFieldName = idFieldName;
+  public RecordToJsonDocumentTransformer(String keyField) {
+    this.keyField = keyField;
   }
 
   /**
@@ -41,7 +41,7 @@ public class RecordToJsonDocumentTransformer {
    * @return {@link JsonDocument} that corresponds to the given {@link StructuredRecord}.
    */
   public JsonDocument transform(StructuredRecord record) {
-    String id = record.get(idFieldName);
+    String id = record.get(keyField);
     // TODO implement
     return JsonDocument.create(id, JsonObject.empty());
   }

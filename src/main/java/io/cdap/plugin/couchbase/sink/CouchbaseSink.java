@@ -81,7 +81,7 @@ public class CouchbaseSink extends ReferenceBatchSink<StructuredRecord, NullWrit
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    transformer = new RecordToJsonDocumentTransformer(config.getIdFieldName());
+    transformer = new RecordToJsonDocumentTransformer(config.getKeyField());
   }
 
   @Override
