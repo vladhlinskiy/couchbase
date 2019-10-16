@@ -88,4 +88,23 @@ public class CouchbaseConstants {
    * Configuration property name used to specify number of seconds to wait before a timeout has occurred on a query.
    */
   public static final String QUERY_TIMEOUT = "timeout";
+
+  /**
+   * Configuration property name used to specify which of the incoming fields should be used as a document identifier.
+   * Identifier is expected to be of type string.
+   */
+  public static final String KEY_FIELD = "keyField";
+
+  /**
+   * Configuration property name used to specify type of write operation to perform.
+   * This can be set to Insert, Replace or Upsert.
+   */
+  public static final String OPERATION = "operation";
+
+  /**
+   * Configuration property name used to specify size (in number of records) of the batched writes to the Couchbase
+   * bucket. Each write to Couchbase contains some overhead. To maximize bulk write throughput, maximize the amount of
+   * data stored per write. Commits of 1 MiB usually provide the best performance. Default value is 100 records.
+   */
+  public static final String BATCH_SIZE = "batchSize";
 }

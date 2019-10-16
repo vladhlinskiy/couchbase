@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
