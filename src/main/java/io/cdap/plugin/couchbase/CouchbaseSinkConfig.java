@@ -26,7 +26,7 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.IdUtils;
-import io.cdap.plugin.couchbase.source.CouchbaseSource;
+import io.cdap.plugin.couchbase.sink.CouchbaseSink;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +36,8 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
- * Defines a {@link PluginConfig} that {@link CouchbaseSource} can use.
+ * TODO avoid duplication
+ * Defines a {@link PluginConfig} that {@link CouchbaseSink} can use.
  */
 public class CouchbaseSinkConfig extends PluginConfig {
 
@@ -65,11 +66,15 @@ public class CouchbaseSinkConfig extends PluginConfig {
   @Macro
   private String bucket;
 
-  // TODO
-  @Name("idFieldName")
+  @Name(CouchbaseConstants.KEY_FIELD)
   @Description("Allows to specify which of the incoming fields should be used as an document identifier.")
   @Macro
-  private String idFieldName;
+  private String keyField;
+
+  @Name(CouchbaseConstants.OPERATION)
+  @Description("Type of write operation to perform. This can be set to Insert, Replace or Upsert.")
+  @Macro
+  private String operation;
 
   @Name(CouchbaseConstants.USERNAME)
   @Description("User identity for connecting to the Couchbase.")
@@ -83,14 +88,23 @@ public class CouchbaseSinkConfig extends PluginConfig {
   @Nullable
   private String password;
 
-  public CouchbaseSinkConfig(String referenceName, String nodes, String bucket, String idFieldName, String user,
-                             String password) {
+  @Name(CouchbaseConstants.BATCH_SIZE)
+  @Description("Size (in number of records) of the batched writes to the Couchbase bucket. Each write to Couchbase " +
+    "contains some overhead. To maximize bulk write throughput, maximize the amount of data stored per write. " +
+    "Commits of 1 MiB usually provide the best performance. Default value is 100 records.")
+  @Macro
+  private Integer batchSize;
+
+  public CouchbaseSinkConfig(String referenceName, String nodes, String bucket, String keyField, String operation,
+                             String user, String password, Integer batchSize) {
     this.referenceName = referenceName;
     this.nodes = nodes;
     this.bucket = bucket;
-    this.idFieldName = idFieldName;
+    this.keyField = keyField;
+    this.operation = operation;
     this.user = user;
     this.password = password;
+    this.batchSize = batchSize;
   }
 
   public String getReferenceName() {
@@ -105,8 +119,12 @@ public class CouchbaseSinkConfig extends PluginConfig {
     return bucket;
   }
 
-  public String getIdFieldName() {
-    return idFieldName;
+  public String getKeyField() {
+    return keyField;
+  }
+
+  public String getOperation() {
+    return operation;
   }
 
   @Nullable
@@ -119,8 +137,16 @@ public class CouchbaseSinkConfig extends PluginConfig {
     return password;
   }
 
+  public Integer getBatchSize() {
+    return batchSize;
+  }
+
   public List<String> getNodeList() {
     return Arrays.asList(getNodes().split(","));
+  }
+
+  public OperationType getOperationType() {
+    return OperationType.valueOf(operation);
   }
 
   /**
@@ -149,10 +175,9 @@ public class CouchbaseSinkConfig extends PluginConfig {
       collector.addFailure("Bucket name must be specified", null)
         .withConfigProperty(CouchbaseConstants.BUCKET);
     }
-    // TODO idFieldName
-    if (!containsMacro("idFieldName") && Strings.isNullOrEmpty(idFieldName)) {
-      collector.addFailure("Identifier field name must be specified", null)
-        .withConfigProperty(CouchbaseConstants.QUERY);
+    if (!containsMacro(CouchbaseConstants.KEY_FIELD) && Strings.isNullOrEmpty(keyField)) {
+      collector.addFailure("Key field name must be specified", null)
+        .withConfigProperty(CouchbaseConstants.KEY_FIELD);
     }
     if (!containsMacro(CouchbaseConstants.USERNAME) && !containsMacro(CouchbaseConstants.PASSWORD) &&
       Strings.isNullOrEmpty(user) && !Strings.isNullOrEmpty(password)) {
@@ -181,12 +206,11 @@ public class CouchbaseSinkConfig extends PluginConfig {
     for (Schema.Field field : fields) {
       validateFieldSchema(field.getName(), field.getSchema(), collector);
     }
-    // TODO idFieldName
-    if (!containsMacro("idFieldName") && !Strings.isNullOrEmpty(idFieldName)) {
-      if (schema.getField(idFieldName) == null) {
-        collector.addFailure("Schema must contain at least one field", null)
+    if (!containsMacro(CouchbaseConstants.KEY_FIELD) && !Strings.isNullOrEmpty(keyField)) {
+      if (schema.getField(keyField) == null) {
+        collector.addFailure(String.format("Schema does not contain key field '%s'", keyField), null)
           .withConfigProperty(CouchbaseConstants.SCHEMA)
-          .withConfigProperty("idFieldName");
+          .withConfigProperty(CouchbaseConstants.KEY_FIELD);
       }
     }
   }
