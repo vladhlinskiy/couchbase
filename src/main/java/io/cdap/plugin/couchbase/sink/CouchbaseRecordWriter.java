@@ -58,8 +58,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
       cluster.authenticate(config.getUser(), config.getPassword());
     }
     this.bucket = cluster.openBucket(config.getBucket());
-    // TODO
-    this.batchSize = 25;
+    this.batchSize = config.getBatchSize();
     this.batch = new ArrayList<>();
     this.totalCount = 0;
   }
@@ -78,6 +77,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
   public void close(TaskAttemptContext taskAttemptContext) {
     flush();
     LOG.debug("Total number of values written to Couchbase: {}", totalCount);
+    bucket.close();
   }
 
   private void flush() {

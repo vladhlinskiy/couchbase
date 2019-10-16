@@ -13,11 +13,25 @@ Configuration
 
 **Bucket:** Couchbase bucket name.
 
-**ID Field:** Which input field should be used as the document identifier. Identifier is expected to be a string.
+**Key Field:** Which input field should be used as the document identifier. Identifier is expected to be a string.
+
+**Operation**: Type of write operation to perform. This can be set to Insert, Replace or Upsert. For more information,
+see [Primitive Key-Value Operations].
+
+[Primitive Key-Value Operations]:
+https://docs.couchbase.com/java-sdk/2.7/core-operations.html#crud-overview
 
 **Username:** User identity for connecting to the Couchbase.
 
 **Password:** Password to use to connect to the Couchbase.
+
+**Batch Size**: Size (in number of records) of the batched writes to the Couchbase bucket.
+Each write to Couchbase contains some overhead. To maximize bulk write throughput,
+maximize the amount of data stored per write. Commits of 1 MiB usually provide the best performance. Default value 
+is 100 records. For more information, see [Batching Operations].
+
+[Batching Operations]:
+https://docs.couchbase.com/java-sdk/2.7/batching-operations.html
 
 Data Types Mapping
 ----------
