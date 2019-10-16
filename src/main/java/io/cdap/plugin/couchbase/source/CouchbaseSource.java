@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CouchbaseSource.class);
+
   private final CouchbaseSourceConfig config;
   private JsonObjectToRecordTransformer transformer;
 
