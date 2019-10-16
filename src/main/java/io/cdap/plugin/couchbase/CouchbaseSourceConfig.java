@@ -42,6 +42,9 @@ import javax.annotation.Nullable;
  */
 public class CouchbaseSourceConfig extends PluginConfig {
 
+  public static final Schema ERROR_SCHEMA = Schema.recordOf("error", Schema.Field.of("document",
+                                                                                     Schema.of(Schema.Type.STRING)));
+
   private static final Set<Schema.Type> SUPPORTED_SIMPLE_TYPES = ImmutableSet.of(Schema.Type.BOOLEAN, Schema.Type.INT,
                                                                                  Schema.Type.DOUBLE, Schema.Type.LONG,
                                                                                  Schema.Type.STRING, Schema.Type.RECORD,
