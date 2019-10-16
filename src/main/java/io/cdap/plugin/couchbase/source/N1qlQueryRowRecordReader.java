@@ -18,13 +18,14 @@ package io.cdap.plugin.couchbase.source;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
+import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.query.N1qlQuery;
 import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.N1qlQueryRow;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.cdap.plugin.couchbase.CouchbaseConfig;
+import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 import io.cdap.plugin.couchbase.exception.CouchbaseExecutionException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * RecordReader implementation, which reads N1qlQueryRow entries.
@@ -59,7 +61,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
     Configuration conf = taskAttemptContext.getConfiguration();
     String configJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
-    CouchbaseConfig config = gson.fromJson(configJson, CouchbaseConfig.class);
+    CouchbaseSourceConfig config = gson.fromJson(configJson, CouchbaseSourceConfig.class);
 
     Cluster cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
@@ -77,7 +79,10 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
     N1qlQueryResult result = bucket.query(query);
 
     if (!result.finalSuccess()) {
-      throw new CouchbaseExecutionException(result.errors());
+      String errorMessage = result.errors().stream()
+        .map(JsonObject::toString)
+        .collect(Collectors.joining("\n"));
+      throw new CouchbaseExecutionException(errorMessage);
     }
 
     this.iterator = result.rows();

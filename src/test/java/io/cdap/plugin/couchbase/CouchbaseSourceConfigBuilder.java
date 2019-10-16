@@ -15,10 +15,12 @@
  */
 package io.cdap.plugin.couchbase;
 
+import javax.annotation.Nullable;
+
 /**
- * Builder class that provides handy methods to construct {@link CouchbaseConfig} for testing.
+ * Builder class that provides handy methods to construct {@link CouchbaseSourceConfig} for testing.
  */
-public class CouchbaseConfigBuilder {
+public class CouchbaseSourceConfigBuilder {
 
   protected String referenceName;
   protected String nodes;
@@ -32,11 +34,11 @@ public class CouchbaseConfigBuilder {
   protected String scanConsistency;
   protected Integer timeout;
 
-  public static CouchbaseConfigBuilder builder() {
-    return new CouchbaseConfigBuilder();
+  public static CouchbaseSourceConfigBuilder builder() {
+    return new CouchbaseSourceConfigBuilder();
   }
 
-  public static CouchbaseConfigBuilder builder(CouchbaseConfig original) {
+  public static CouchbaseSourceConfigBuilder builder(CouchbaseSourceConfig original) {
     return builder()
       .setReferenceName(original.getReferenceName())
       .setNodes(original.getNodes())
@@ -51,63 +53,63 @@ public class CouchbaseConfigBuilder {
       .setSchema(original.getSchema());
   }
 
-  public CouchbaseConfigBuilder setReferenceName(String referenceName) {
+  public CouchbaseSourceConfigBuilder setReferenceName(String referenceName) {
     this.referenceName = referenceName;
     return this;
   }
 
-  public CouchbaseConfigBuilder setNodes(String nodes) {
+  public CouchbaseSourceConfigBuilder setNodes(String nodes) {
     this.nodes = nodes;
     return this;
   }
 
-  public CouchbaseConfigBuilder setBucket(String bucket) {
+  public CouchbaseSourceConfigBuilder setBucket(String bucket) {
     this.bucket = bucket;
     return this;
   }
 
-  public CouchbaseConfigBuilder setQuery(String query) {
+  public CouchbaseSourceConfigBuilder setQuery(String query) {
     this.query = query;
     return this;
   }
 
-  public CouchbaseConfigBuilder setUser(String user) {
+  public CouchbaseSourceConfigBuilder setUser(@Nullable String user) {
     this.user = user;
     return this;
   }
 
-  public CouchbaseConfigBuilder setPassword(String password) {
+  public CouchbaseSourceConfigBuilder setPassword(@Nullable String password) {
     this.password = password;
     return this;
   }
 
-  public CouchbaseConfigBuilder setOnError(String onError) {
+  public CouchbaseSourceConfigBuilder setOnError(String onError) {
     this.onError = onError;
     return this;
   }
 
-  public CouchbaseConfigBuilder setMaxParallelism(Integer maxParallelism) {
+  public CouchbaseSourceConfigBuilder setMaxParallelism(Integer maxParallelism) {
     this.maxParallelism = maxParallelism;
     return this;
   }
 
-  public CouchbaseConfigBuilder setScanConsistency(String scanConsistency) {
+  public CouchbaseSourceConfigBuilder setScanConsistency(String scanConsistency) {
     this.scanConsistency = scanConsistency;
     return this;
   }
 
-  public CouchbaseConfigBuilder setQueryTimeout(Integer timeout) {
+  public CouchbaseSourceConfigBuilder setQueryTimeout(Integer timeout) {
     this.timeout = timeout;
     return this;
   }
 
-  public CouchbaseConfigBuilder setSchema(String schema) {
+  public CouchbaseSourceConfigBuilder setSchema(String schema) {
     this.schema = schema;
     return this;
   }
 
-  public CouchbaseConfig build() {
-    return new CouchbaseConfig(referenceName, nodes, bucket, query, user, password, onError, schema, maxParallelism,
-                               scanConsistency, timeout);
+  public CouchbaseSourceConfig build() {
+    return new CouchbaseSourceConfig(referenceName, nodes, bucket, query, user, password, onError, schema,
+                                     maxParallelism, scanConsistency, timeout);
   }
 }

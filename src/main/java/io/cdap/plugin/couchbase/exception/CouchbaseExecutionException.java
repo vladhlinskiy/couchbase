@@ -15,27 +15,17 @@
  */
 package io.cdap.plugin.couchbase.exception;
 
-import com.couchbase.client.java.document.json.JsonObject;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * Runtime Couchbase execution exception thrown when there were errors during execution of Couchbase operations or
  * commands.
  */
 public class CouchbaseExecutionException extends RuntimeException {
 
-  private final List<JsonObject> errors;
-
-  public CouchbaseExecutionException(List<JsonObject> errors) {
-    this.errors = errors;
+  public CouchbaseExecutionException(String message) {
+    super(message);
   }
 
-  @Override
-  public String getMessage() {
-    return errors.stream()
-      .map(JsonObject::toString)
-      .collect(Collectors.joining("\n"));
+  public CouchbaseExecutionException(String message, Throwable cause) {
+    super(message, cause);
   }
 }

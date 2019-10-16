@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.plugin.couchbase.CouchbaseConfig;
+import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -40,10 +40,10 @@ import javax.annotation.Nullable;
  */
 public class JsonObjectToRecordTransformer {
 
-  private final CouchbaseConfig config;
+  private final CouchbaseSourceConfig config;
   private final Schema schema;
 
-  public JsonObjectToRecordTransformer(CouchbaseConfig config, Schema schema) {
+  public JsonObjectToRecordTransformer(CouchbaseSourceConfig config, Schema schema) {
     this.config = config;
     this.schema = schema;
   }
@@ -76,7 +76,7 @@ public class JsonObjectToRecordTransformer {
     boolean isWildCardQuery = config.getQuery().contains("*");
     if (isWildCardQuery && jsonObject.containsKey(config.getBucket())) {
       JsonObject payload = jsonObject.getObject(config.getBucket());
-      if (jsonObject.getNames().size() == 1) {
+      if (jsonObject.size() == 1) {
         return payload;
       }
       // Result object can contain other fields for queries such as: SELECT meta(`test-bucket`).id, * from `test-bucket`

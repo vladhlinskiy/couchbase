@@ -17,7 +17,6 @@
 package io.cdap.plugin.couchbase;
 
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
@@ -41,7 +40,7 @@ import javax.annotation.Nullable;
 /**
  * Defines a {@link PluginConfig} that {@link CouchbaseSource} can use.
  */
-public class CouchbaseConfig extends PluginConfig {
+public class CouchbaseSourceConfig extends PluginConfig {
 
   private static final Set<Schema.Type> SUPPORTED_SIMPLE_TYPES = ImmutableSet.of(Schema.Type.BOOLEAN, Schema.Type.INT,
                                                                                  Schema.Type.DOUBLE, Schema.Type.LONG,
@@ -104,9 +103,9 @@ public class CouchbaseConfig extends PluginConfig {
   @Description("Number of seconds to wait before a timeout has occurred on a query.")
   private Integer timeout;
 
-  public CouchbaseConfig(String referenceName, String nodes, String bucket, String query, String user,
-                         String password, String onError, String schema, Integer maxParallelism, String consistency,
-                         Integer timeout) {
+  public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String query, String user,
+                               String password, String onError, String schema, Integer maxParallelism,
+                               String consistency, Integer timeout) {
     this.referenceName = referenceName;
     this.nodes = nodes;
     this.bucket = bucket;
@@ -178,7 +177,7 @@ public class CouchbaseConfig extends PluginConfig {
       return schema == null ? null : Schema.parseJson(schema);
     } catch (IOException e) {
       // this should not happen, since schema string comes from UI
-      throw Throwables.propagate(e);
+      throw new IllegalStateException(String.format("Could not parse schema string: '%s'", schema), e);
     }
   }
 
@@ -195,7 +194,7 @@ public class CouchbaseConfig extends PluginConfig {
   }
 
   /**
-   * Validates {@link CouchbaseConfig} instance.
+   * Validates {@link CouchbaseSourceConfig} instance.
    *
    * @param collector failure collector.
    */
@@ -270,16 +269,14 @@ public class CouchbaseConfig extends PluginConfig {
       Schema parsedSchema = getParsedSchema();
       validateSchema(parsedSchema, collector);
     }
-
-    collector.getOrThrowException();
   }
 
   private void validateSchema(Schema schema, FailureCollector collector) {
     List<Schema.Field> fields = schema.getFields();
-    if (null == fields || fields.isEmpty()) {
+    if (fields == null || fields.isEmpty()) {
       collector.addFailure("Schema must contain at least one field", null)
         .withConfigProperty(CouchbaseConstants.SCHEMA);
-      collector.getOrThrowException();
+      return;
     }
     for (Schema.Field field : fields) {
       validateFieldSchema(field.getName(), field.getSchema(), collector);

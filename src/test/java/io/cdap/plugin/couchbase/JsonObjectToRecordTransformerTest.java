@@ -41,11 +41,11 @@ public class JsonObjectToRecordTransformerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private static CouchbaseConfig config;
+  private static CouchbaseSourceConfig config;
 
   @BeforeClass
   public static void setupTestClass() throws Exception {
-    config = CouchbaseConfigBuilder.builder()
+    config = CouchbaseSourceConfigBuilder.builder()
       .setQuery("SELECT name FROM `test`")
       .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
       .setScanConsistency(Consistency.NOT_BOUNDED.getDisplayName())
@@ -188,7 +188,7 @@ public class JsonObjectToRecordTransformerTest {
       .put("nested_object", nestedJsonObject)
       .put("object_to_map", mapObject);
 
-    CouchbaseConfig wildCardQueryConfig = CouchbaseConfigBuilder.builder(config)
+    CouchbaseSourceConfig wildCardQueryConfig = CouchbaseSourceConfigBuilder.builder(config)
       .setBucket("bucket-name")
       .setQuery("SELECT meta(`bucket-name`).id, * from `bucket-name`")
       .build();

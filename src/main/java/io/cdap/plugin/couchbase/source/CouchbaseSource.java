@@ -33,8 +33,8 @@ import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.plugin.common.LineageRecorder;
-import io.cdap.plugin.couchbase.CouchbaseConfig;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
+import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 import org.apache.hadoop.io.NullWritable;
 
 import java.util.stream.Collectors;
@@ -47,10 +47,10 @@ import java.util.stream.Collectors;
 @Description("Read data from Couchbase Server.")
 public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, StructuredRecord> {
 
-  private final CouchbaseConfig config;
+  private final CouchbaseSourceConfig config;
   private JsonObjectToRecordTransformer transformer;
 
-  public CouchbaseSource(CouchbaseConfig config) {
+  public CouchbaseSource(CouchbaseSourceConfig config) {
     this.config = config;
   }
 
@@ -59,6 +59,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     FailureCollector collector = stageConfigurer.getFailureCollector();
     config.validate(collector);
+    collector.getOrThrowException();
     Schema schema = config.getParsedSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
@@ -67,6 +68,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
   public void prepareRun(BatchSourceContext context) {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
+    collector.getOrThrowException();
     Schema schema = context.getOutputSchema();
     LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
     lineageRecorder.createExternalDataset(schema);
