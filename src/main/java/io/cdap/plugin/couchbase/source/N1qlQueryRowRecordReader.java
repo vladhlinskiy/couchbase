@@ -22,6 +22,9 @@ import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.query.N1qlQuery;
 import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.N1qlQueryRow;
+import com.couchbase.client.java.query.Select;
+import com.couchbase.client.java.query.Statement;
+import com.couchbase.client.java.query.dsl.Expression;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -69,15 +72,17 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
     }
     this.bucket = cluster.openBucket(config.getBucket());
 
-    LOG.trace("Executing query split: {}", config.getQuery());
+    Statement statement = Strings.isNullOrEmpty(config.getConditions())
+      ? Select.select(config.getSelectFields()).from(Expression.i(config.getBucket()))
+      : Select.select(config.getSelectFields()).from(Expression.i(config.getBucket())).where(config.getConditions());
+    LOG.trace("Executing query split: {}", statement);
 
-    N1qlQuery query = N1qlQuery.simple(config.getQuery());
+    N1qlQuery query = N1qlQuery.simple(statement);
     query.params().consistency(config.getScanConsistency().getScanConsistency())
       .maxParallelism(config.getMaxParallelism())
       .serverSideTimeout(config.getTimeout(), TimeUnit.SECONDS);
 
     N1qlQueryResult result = bucket.query(query);
-
     if (!result.finalSuccess()) {
       String errorMessage = result.errors().stream()
         .map(JsonObject::toString)

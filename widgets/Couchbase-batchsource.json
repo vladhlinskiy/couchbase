@@ -24,8 +24,16 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Input Query",
-          "name": "query"
+          "label": "Select Fields",
+          "name": "selectFields",
+          "widget-attributes": {
+            "default": "*"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Conditions",
+          "name": "conditions"
         }
       ]
     },

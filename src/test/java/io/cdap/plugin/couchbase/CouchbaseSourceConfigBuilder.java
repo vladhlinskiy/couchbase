@@ -25,7 +25,8 @@ public class CouchbaseSourceConfigBuilder {
   protected String referenceName;
   protected String nodes;
   protected String bucket;
-  protected String query;
+  protected String selectFields;
+  protected String conditions;
   protected String user;
   protected String password;
   protected String onError;
@@ -43,12 +44,13 @@ public class CouchbaseSourceConfigBuilder {
       .setReferenceName(original.getReferenceName())
       .setNodes(original.getNodes())
       .setBucket(original.getBucket())
-      .setQuery(original.getQuery())
+      .setSelectFields(original.getSelectFields())
+      .setConditions(original.getConditions())
       .setUser(original.getUser())
       .setPassword(original.getPassword())
-      .setOnError(original.getErrorHandling() == null ? null : original.getErrorHandling().getDisplayName())
+      .setOnError(original.getOnError())
       .setMaxParallelism(original.getMaxParallelism())
-      .setScanConsistency(original.getScanConsistency() == null ? null : original.getScanConsistency().getDisplayName())
+      .setScanConsistency(original.getConsistency())
       .setQueryTimeout(original.getTimeout())
       .setSchema(original.getSchema());
   }
@@ -68,8 +70,13 @@ public class CouchbaseSourceConfigBuilder {
     return this;
   }
 
-  public CouchbaseSourceConfigBuilder setQuery(String query) {
-    this.query = query;
+  public CouchbaseSourceConfigBuilder setSelectFields(String selectFields) {
+    this.selectFields = selectFields;
+    return this;
+  }
+
+  public CouchbaseSourceConfigBuilder setConditions(@Nullable String conditions) {
+    this.conditions = conditions;
     return this;
   }
 
@@ -109,7 +116,7 @@ public class CouchbaseSourceConfigBuilder {
   }
 
   public CouchbaseSourceConfig build() {
-    return new CouchbaseSourceConfig(referenceName, nodes, bucket, query, user, password, onError, schema,
-                                     maxParallelism, scanConsistency, timeout);
+    return new CouchbaseSourceConfig(referenceName, nodes, bucket, selectFields, conditions, user, password, onError,
+                                     schema, maxParallelism, scanConsistency, timeout);
   }
 }

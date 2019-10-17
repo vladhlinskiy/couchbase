@@ -41,9 +41,15 @@ public class CouchbaseConstants {
   public static final String BUCKET = "bucket";
 
   /**
-   * Configuration property name used to specify N1QL query to use to import data from the specified bucket.
+   * Configuration property name used to specify comma-separated list of fields to be read.
    */
-  public static final String QUERY = "query";
+  public static final String SELECT_FIELDS = "selectFields";
+
+  /**
+   * Configuration property name used to specify optional criteria (filters or predicates) that the result documents
+   * must satisfy. Corresponds to the WHERE clause in N1QL SELECT statement.
+   */
+  public static final String CONDITIONS = "conditions";
 
   /**
    * Configuration property name used to specify user identity for connecting to the Couchbase.
