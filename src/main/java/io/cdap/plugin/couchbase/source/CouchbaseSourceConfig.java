@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 
@@ -151,7 +152,7 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   }
 
   public List<String> getSelectFieldsList() {
-    return Arrays.asList(getSelectFields().split(","));
+    return Arrays.stream(getSelectFields().split(",")).map(String::trim).collect(Collectors.toList());
   }
 
   public Consistency getScanConsistency() {
@@ -199,12 +200,8 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
           .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
       }
     }
-    // TODO Couchbase Server 4.5 introduces INFER, a N1QL statement that infers the metadata of documents.
-    // This can be used to infer the Output Schema.
-    if (!containsMacro(CouchbaseConstants.SCHEMA) && Strings.isNullOrEmpty(schema)) {
-      collector.addFailure("Output schema must be specified", null)
-        .withConfigProperty(CouchbaseConstants.SCHEMA);
-    } else if (!containsMacro(CouchbaseConstants.SCHEMA)) {
+
+    if (!containsMacro(CouchbaseConstants.SCHEMA) && !Strings.isNullOrEmpty(schema)) {
       Schema parsedSchema = getParsedSchema();
       validateSchema(parsedSchema, collector);
     }
