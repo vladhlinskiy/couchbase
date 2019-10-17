@@ -137,8 +137,8 @@ public class JsonObjectToRecordTransformer {
         ensureTypeValid(fieldName, object, Integer.class, Long.class);
         return ((Number) object).longValue();
       case STRING:
-        ensureTypeValid(fieldName, object, String.class);
-        return object;
+        ensureTypeValid(fieldName, object, String.class, Number.class);
+        return object.toString();
       case MAP:
         ensureTypeValid(fieldName, object, JsonObject.class);
         Schema valueSchema = schema.getMapSchema().getValue().isNullable()
