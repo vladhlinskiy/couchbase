@@ -66,10 +66,17 @@ public class CouchbaseSourceConfig extends PluginConfig {
   @Macro
   private String bucket;
 
-  @Name(CouchbaseConstants.QUERY)
-  @Description("N1QL query to use to import data from the specified bucket.")
+  @Name(CouchbaseConstants.SELECT_FIELDS)
+  @Description("Comma-separated list of fields to be read.")
   @Macro
-  private String query;
+  private String selectFields;
+
+  @Name(CouchbaseConstants.CONDITIONS)
+  @Description("Optional criteria (filters or predicates) that the result documents must satisfy. Corresponds to the " +
+    "WHERE clause in N1QL SELECT statement.")
+  @Macro
+  @Nullable
+  private String conditions;
 
   @Name(CouchbaseConstants.USERNAME)
   @Description("User identity for connecting to the Couchbase.")
@@ -94,8 +101,9 @@ public class CouchbaseSourceConfig extends PluginConfig {
   private String schema;
 
   @Name(CouchbaseConstants.MAX_PARALLELISM)
-  @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less than zero" +
-    " or greater than the total number of cores in a cluster, the system will use all available cores in the cluster.")
+  @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less " +
+    "than zero or greater than the total number of cores in a cluster, the system will use all available cores in " +
+    "the cluster.")
   private Integer maxParallelism;
 
   @Name(CouchbaseConstants.SCAN_CONSISTENCY)
@@ -106,13 +114,14 @@ public class CouchbaseSourceConfig extends PluginConfig {
   @Description("Number of seconds to wait before a timeout has occurred on a query.")
   private Integer timeout;
 
-  public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String query, String user,
-                               String password, String onError, String schema, Integer maxParallelism,
-                               String consistency, Integer timeout) {
+  public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String selectFields,
+                               String conditions, String user, String password, String onError, String schema,
+                               Integer maxParallelism, String consistency, Integer timeout) {
     this.referenceName = referenceName;
     this.nodes = nodes;
     this.bucket = bucket;
-    this.query = query;
+    this.selectFields = selectFields;
+    this.conditions = conditions;
     this.user = user;
     this.password = password;
     this.onError = onError;
@@ -134,8 +143,13 @@ public class CouchbaseSourceConfig extends PluginConfig {
     return bucket;
   }
 
-  public String getQuery() {
-    return query;
+  public String getSelectFields() {
+    return selectFields;
+  }
+
+  @Nullable
+  public String getConditions() {
+    return conditions;
   }
 
   @Nullable
@@ -188,6 +202,10 @@ public class CouchbaseSourceConfig extends PluginConfig {
     return Arrays.asList(getNodes().split(","));
   }
 
+  public List<String> getSelectFieldsList() {
+    return Arrays.asList(getSelectFields().split(","));
+  }
+
   public Consistency getScanConsistency() {
     return Objects.requireNonNull(Consistency.fromDisplayName(consistency));
   }
@@ -222,9 +240,9 @@ public class CouchbaseSourceConfig extends PluginConfig {
       collector.addFailure("Bucket name must be specified", null)
         .withConfigProperty(CouchbaseConstants.BUCKET);
     }
-    if (!containsMacro(CouchbaseConstants.QUERY) && Strings.isNullOrEmpty(query)) {
-      collector.addFailure("Query must be specified", null)
-        .withConfigProperty(CouchbaseConstants.QUERY);
+    if (!containsMacro(CouchbaseConstants.SELECT_FIELDS) && Strings.isNullOrEmpty(selectFields)) {
+      collector.addFailure("Select fields must be specified", null)
+        .withConfigProperty(CouchbaseConstants.SELECT_FIELDS);
     }
     if (!containsMacro(CouchbaseConstants.USERNAME) && !containsMacro(CouchbaseConstants.PASSWORD) &&
       Strings.isNullOrEmpty(user) && !Strings.isNullOrEmpty(password)) {

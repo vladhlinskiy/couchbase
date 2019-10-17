@@ -46,7 +46,7 @@ public class JsonObjectToRecordTransformerTest {
   @BeforeClass
   public static void setupTestClass() throws Exception {
     config = CouchbaseSourceConfigBuilder.builder()
-      .setQuery("SELECT name FROM `test`")
+      .setSelectFields("name")
       .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
       .setScanConsistency(Consistency.NOT_BOUNDED.getDisplayName())
       .build();
@@ -190,13 +190,12 @@ public class JsonObjectToRecordTransformerTest {
 
     CouchbaseSourceConfig wildCardQueryConfig = CouchbaseSourceConfigBuilder.builder(config)
       .setBucket("bucket-name")
-      .setQuery("SELECT meta(`bucket-name`).id, * from `bucket-name`")
+      .setSelectFields("meta(`bucket-name`).id, *")
       .build();
 
     JsonObject jsonObject = JsonObject.create()
       .put("id", "some_id")
       .put(wildCardQueryConfig.getBucket(), content);
-
 
     JsonObjectToRecordTransformer transformer = new JsonObjectToRecordTransformer(wildCardQueryConfig, schema);
     StructuredRecord transformed = transformer.transform(jsonObject);

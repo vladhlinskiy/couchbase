@@ -73,7 +73,7 @@ public class JsonObjectToRecordTransformer {
    * @return uniform representation of the given result document.
    */
   private JsonObject toUniformJsonObject(JsonObject jsonObject) {
-    boolean isWildCardQuery = config.getQuery().contains("*");
+    boolean isWildCardQuery = config.getSelectFields().contains("*");
     if (isWildCardQuery && jsonObject.containsKey(config.getBucket())) {
       JsonObject payload = jsonObject.getObject(config.getBucket());
       if (jsonObject.size() == 1) {

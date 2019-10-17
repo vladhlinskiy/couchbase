@@ -14,11 +14,16 @@ Configuration
 
 **Bucket:** Couchbase bucket name.
 
-**Input Query:** N1QL query to use to import data from the specified bucket. For more information, 
-see [N1QL Language Reference].
+**Select Fields:** Comma-separated list of fields to be read.
 
-[N1QL Language Reference]:
-https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/index.html
+**Conditions:** Optional criteria (filters or predicates) that the result documents must satisfy. Corresponds to
+the [WHERE clause] in [N1QL SELECT statement].
+
+[WHERE clause]:
+https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/where.html
+
+[N1QL SELECT statement]:
+https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/selectintro.html
 
 **Username:** User identity for connecting to the Couchbase.
 

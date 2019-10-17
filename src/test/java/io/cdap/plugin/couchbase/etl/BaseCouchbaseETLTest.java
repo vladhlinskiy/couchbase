@@ -111,7 +111,7 @@ public abstract class BaseCouchbaseETLTest extends HydratorTestBase {
     clusterManager.insertBucket(bucketSettings);
     bucket = cluster.openBucket(bucketName);
     // Buckets with no index cannot be queried. Documents can only be retrieved by making use of the USE KEYS operator
-    bucket.bucketManager().createN1qlPrimaryIndex(true, false);
+    bucket.bucketManager().createN1qlPrimaryIndex(true, false, 60, TimeUnit.SECONDS);
   }
 
   public List<StructuredRecord> getPipelineResults(Map<String, String> sourceProperties) throws Exception {

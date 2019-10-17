@@ -50,7 +50,7 @@ public class CouchbaseSourceConfigTest {
     .setReferenceName("CouchbaseSource")
     .setNodes("localhost")
     .setBucket("travel-sample")
-    .setQuery("SELECT meta(`travel-sample`).id, * from `travel-sample`")
+    .setSelectFields("meta(`travel-sample`).id, *")
     .setUser("Administrator")
     .setPassword("password")
     .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
@@ -216,25 +216,25 @@ public class CouchbaseSourceConfigTest {
   }
 
   @Test
-  public void testValidateQueryNull() {
+  public void testValidateSelectFieldsNull() {
     CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setQuery(null)
+      .setSelectFields(null)
       .build();
 
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.QUERY);
+    assertValidationFailed(failureCollector, CouchbaseConstants.SELECT_FIELDS);
   }
 
   @Test
-  public void testValidateQueryEmpty() {
+  public void testValidateSelectFieldsEmpty() {
     CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setQuery("")
+      .setSelectFields("")
       .build();
 
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.QUERY);
+    assertValidationFailed(failureCollector, CouchbaseConstants.SELECT_FIELDS);
   }
 
   @Test

@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
 
@@ -131,34 +132,50 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
 
   @Test
   public void testSource() throws Exception {
-    String query = String.format("SELECT * from `%s` ORDER BY created", BASE_PROPERTIES.get(CouchbaseConstants.BUCKET));
-    Map<String, String> properties = sourceProperties(query, SCHEMA);
+    Map<String, String> properties = sourceProperties("*", SCHEMA);
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
-    for (int i = 0; i < TEST_DOCUMENTS.size(); i++) {
-      assertEquals(TEST_DOCUMENTS.get(i), records.get(i));
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
+  public void testSourceWithConditions() throws Exception {
+    Map<String, String> properties = sourceProperties("*", "`boolean` = true", SCHEMA);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(1, records.size()); // single document satisfies the criteria
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
+      assertEquals(expected, actual);
     }
   }
 
   @Test
   public void testSourceSingleField() throws Exception {
-    String bucketName = BASE_PROPERTIES.get(CouchbaseConstants.BUCKET);
-    String query = String.format("SELECT created from `%s` ORDER BY created", bucketName);
     Schema schema = Schema.recordOf("inner-object-schema", Schema.Field.of("created", Schema.of(Schema.Type.LONG)));
-    Map<String, String> properties = sourceProperties(query, schema);
+    Map<String, String> properties = sourceProperties("created", schema);
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
-    for (int i = 0; i < TEST_DOCUMENTS.size(); i++) {
-      JsonObject content = TEST_DOCUMENTS.get(i).content();
-      StructuredRecord actual = records.get(i);
-      Assert.assertEquals(content.getLong("created"), actual.<Long>get("created"));
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
     }
   }
 
   @Test
   public void testSourceIncludeId() throws Exception {
     String bucketName = BASE_PROPERTIES.get(CouchbaseConstants.BUCKET);
-    String query = String.format("SELECT meta(`%s`).id, * from `%s` ORDER BY created", bucketName, bucketName);
+    String selectFields = String.format("meta(`%s`).id, *", bucketName);
     Schema schemaWithIdIncluded = Schema.recordOf(
       "schema",
       ImmutableList.<Schema.Field>builder()
@@ -166,15 +183,25 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
         .addAll(SCHEMA.getFields())
         .build()
     );
-    Map<String, String> properties = sourceProperties(query, schemaWithIdIncluded);
+    Map<String, String> properties = sourceProperties(selectFields, schemaWithIdIncluded);
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
-    for (int i = 0; i < TEST_DOCUMENTS.size(); i++) {
-      JsonDocument expected = TEST_DOCUMENTS.get(i);
-      StructuredRecord actual = records.get(i);
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
       Assert.assertEquals(expected.id(), actual.get("id"));
       assertEquals(expected, actual);
     }
+  }
+
+  @Nullable
+  private JsonDocument getTestDocumentByCreationTime(long created) {
+    return TEST_DOCUMENTS.stream()
+      .filter(d -> created == d.content().getLong("created"))
+      .findAny()
+      .orElse(null);
   }
 
   private void assertEquals(JsonDocument expected, StructuredRecord actual) {
@@ -215,7 +242,11 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
     }
   }
 
-  private Map<String, String> sourceProperties(String query, Schema schema) {
+  private Map<String, String> sourceProperties(String selectFields, Schema schema) {
+    return sourceProperties(selectFields, null, schema);
+  }
+
+  private Map<String, String> sourceProperties(String selectFields, @Nullable String conditions, Schema schema) {
     return new ImmutableMap.Builder<String, String>()
       .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
       .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
@@ -223,7 +254,8 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       .put(CouchbaseConstants.BUCKET, BASE_PROPERTIES.get(CouchbaseConstants.BUCKET))
       .put(CouchbaseConstants.ON_ERROR, ErrorHandling.FAIL_PIPELINE.getDisplayName())
       .put(CouchbaseConstants.SCHEMA, schema.toString())
-      .put(CouchbaseConstants.QUERY, query)
+      .put(CouchbaseConstants.SELECT_FIELDS, selectFields)
+      .put(CouchbaseConstants.CONDITIONS, conditions != null ? conditions : "")
       .put(CouchbaseConstants.MAX_PARALLELISM, "0")
       .put(CouchbaseConstants.SCAN_CONSISTENCY, Consistency.NOT_BOUNDED.getDisplayName())
       .put(CouchbaseConstants.QUERY_TIMEOUT, "600")
