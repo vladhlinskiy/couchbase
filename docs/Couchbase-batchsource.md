@@ -52,7 +52,7 @@ Data Types Mapping
     | Couchbase Data Type             | CDAP Schema Data Type                             |
     | ------------------------------- | ------------------------------------------------- |
     | Boolean                         | boolean                                           |
-    | Number                          | int, long, double, decimal                        |
+    | Number                          | int, long, double, decimal, string                |
     | String                          | string                                            |
     | Object                          | record, map                                       |
     | Array                           | array                                             |

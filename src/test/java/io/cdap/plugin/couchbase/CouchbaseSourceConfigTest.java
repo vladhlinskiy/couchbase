@@ -35,7 +35,6 @@ import javax.annotation.Nonnull;
 public class CouchbaseSourceConfigTest {
 
   private static final String MOCK_STAGE = "mockstage";
-  private static final String STAGE = "stage";
 
   private static final Schema VALID_SCHEMA =
     Schema.recordOf("schema",
@@ -235,28 +234,6 @@ public class CouchbaseSourceConfigTest {
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
     assertValidationFailed(failureCollector, CouchbaseConstants.SELECT_FIELDS);
-  }
-
-  @Test
-  public void testValidateSchemaNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setSchema(null)
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.SCHEMA);
-  }
-
-  @Test
-  public void testValidateSchemaEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setSchema("")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.SCHEMA);
   }
 
   @Test

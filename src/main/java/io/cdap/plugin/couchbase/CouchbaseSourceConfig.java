@@ -52,6 +52,13 @@ public class CouchbaseSourceConfig extends PluginConfig {
 
   private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(Schema.LogicalType.DECIMAL);
 
+  /**
+   * Select fields may contain metadata fields such as meta(`travel-sample`).id that are not included to the inferred
+   * schema.
+   * TODO change inference logic to include these files to the inferred schema
+   */
+  private static final Set<String> METADATA_FIELD_NAMES = ImmutableSet.of("id", "rev", "expiration", "flags", "type");
+
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
   private String referenceName;
@@ -98,6 +105,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
 
   @Name(CouchbaseConstants.SCHEMA)
   @Description("Schema of records output by the source.")
+  @Nullable
   private String schema;
 
   @Name(CouchbaseConstants.MAX_PARALLELISM)
@@ -166,6 +174,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
     return onError;
   }
 
+  @Nullable
   public String getSchema() {
     return schema;
   }
@@ -191,7 +200,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
   @Nullable
   public Schema getParsedSchema() {
     try {
-      return schema == null ? null : Schema.parseJson(schema);
+      return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
     } catch (IOException e) {
       // this should not happen, since schema string comes from UI
       throw new IllegalStateException(String.format("Could not parse schema string: '%s'", schema), e);
@@ -281,12 +290,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
       collector.addFailure("Query timeout must be specified", null)
         .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
     }
-    // TODO Couchbase Server 4.5 introduces INFER, a N1QL statement that infers the metadata of documents.
-    // This can be used to infer the Output Schema.
-    if (!containsMacro(CouchbaseConstants.SCHEMA) && Strings.isNullOrEmpty(schema)) {
-      collector.addFailure("Output schema must be specified", null)
-        .withConfigProperty(CouchbaseConstants.SCHEMA);
-    } else if (!containsMacro(CouchbaseConstants.SCHEMA)) {
+    if (!containsMacro(CouchbaseConstants.SCHEMA) && !Strings.isNullOrEmpty(schema)) {
       Schema parsedSchema = getParsedSchema();
       validateSchema(parsedSchema, collector);
     }
@@ -354,5 +358,66 @@ public class CouchbaseSourceConfig extends PluginConfig {
                                         fieldName, fieldSchema.getDisplayName(), supportedTypeNames);
     collector.addFailure(errorMessage, String.format("Change field '%s' to be a supported type", fieldName))
       .withOutputSchemaField(fieldName, null);
+  }
+
+  /**
+   * Validate that the provided schema is compatible with the inferred schema. The provided schema is compatible if
+   * every field is compatible with the corresponding field in the inferred schema. A field is compatible if it is of
+   * the same type or is a nullable version of that type. It is assumed that both schemas are record schemas.
+   *
+   * @param inferredSchema the inferred schema
+   * @param providedSchema the provided schema to check compatibility
+   * @param collector      failure collector
+   * @throws IllegalArgumentException if the schemas are not type compatible
+   */
+  public static void validateFieldsMatch(Schema inferredSchema, Schema providedSchema, FailureCollector collector) {
+    for (Schema.Field field : providedSchema.getFields()) {
+      Schema.Field inferredField = inferredSchema.getField(field.getName());
+      if (inferredField == null) {
+        if (METADATA_FIELD_NAMES.contains(field.getName())) {
+          // Select fields may contain metadata fields such as meta(`travel-sample`).id that are not included to the
+          // inferred schema
+          continue;
+        }
+        String errorMessage = String.format("Field '%s' does not exist in Couchbase", field.getName());
+        collector.addFailure(errorMessage, String.format("Remove field '%s' from the output schema", field.getName()))
+          .withOutputSchemaField(field.getName(), null);
+      }
+      Schema inferredFieldSchema = inferredField.getSchema();
+      Schema providedFieldSchema = field.getSchema();
+
+      boolean isInferredFieldNullable = inferredFieldSchema.isNullable();
+      boolean isProvidedFieldNullable = providedFieldSchema.isNullable();
+
+      Schema inferredFieldNonNullableSchema = isInferredFieldNullable
+        ? inferredFieldSchema.getNonNullable() : inferredFieldSchema;
+      Schema providedFieldNonNullableSchema = isProvidedFieldNullable ?
+        providedFieldSchema.getNonNullable() : providedFieldSchema;
+
+      Schema.Type inferredType = inferredFieldNonNullableSchema.getType();
+      Schema.LogicalType inferredLogicalType = inferredFieldNonNullableSchema.getLogicalType();
+      Schema.Type providedType = providedFieldNonNullableSchema.getType();
+      Schema.LogicalType providedLogicalType = providedFieldNonNullableSchema.getLogicalType();
+      if (inferredType != providedType && inferredLogicalType != providedLogicalType) {
+        boolean isProvidedTypeNumeric = providedType == Schema.Type.INT || providedType == Schema.Type.LONG
+          || providedType == Schema.Type.DOUBLE || providedLogicalType == Schema.LogicalType.DECIMAL;
+        if (inferredType == Schema.Type.STRING && isProvidedTypeNumeric) {
+          // 'string' is the default type for Couchbase's 'number' type in the inferred schema
+          continue;
+        }
+        String errorMessage = String.format("Expected field '%s' to be of type '%s', but it is of type '%s'",
+                                            field.getName(), inferredFieldNonNullableSchema.getDisplayName(),
+                                            providedFieldNonNullableSchema.getDisplayName());
+
+        collector.addFailure(errorMessage, String.format("Change field '%s' to be a supported type", field.getName()))
+          .withOutputSchemaField(field.getName(), null);
+      }
+
+      if (!isInferredFieldNullable && isProvidedFieldNullable) {
+        String errorMessage = String.format("Field '%s' should not be nullable", field.getName());
+        collector.addFailure(errorMessage, String.format("Change field '%s' to be non-nullable", field.getName()))
+          .withOutputSchemaField(field.getName(), null);
+      }
+    }
   }
 }
