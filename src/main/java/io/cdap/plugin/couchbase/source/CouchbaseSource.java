@@ -170,14 +170,29 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     // The output is an array of single schema document
     // See: https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/infer.html#example
     JsonObject couchbaseSchema = schemaDraft.getObject(0);
-    return recordSchema("parent", couchbaseSchema);
+    return recordSchema("parent", couchbaseSchema, config.getSelectFieldsList());
   }
 
-  private Schema recordSchema(String recordName, JsonObject recordMetadata) {
+  private Schema recordSchema(String recordName, JsonObject recordMetadata, @Nullable List<String> selectFields) {
     JsonObject couchbasePropertiesMetadata = recordMetadata.getObject("properties");
-
     List<Schema.Field> fields = new ArrayList<>();
+    // Select fields may contain metadata fields such as meta(`travel-sample`).id
+    // Include them to the inferred schema as well using simple names after dot character
+    // All metadata fields are strings
+    if (selectFields != null) {
+      List<Schema.Field> metadataFields = selectFields.stream()
+        .filter(f -> f.startsWith("meta"))
+        .map(f -> f.substring(f.lastIndexOf(".") + 1))
+        .map(simpleName -> Schema.Field.of(simpleName, Schema.of(Schema.Type.STRING)))
+        .collect(Collectors.toList());
+      fields.addAll(metadataFields);
+    }
+
     for (String propertyName : couchbasePropertiesMetadata.getNames()) {
+      if (selectFields != null && !selectFields.contains(propertyName) && !selectFields.contains("*")) {
+        // include only selected fields
+        continue;
+      }
       JsonObject propertyMetadata = couchbasePropertiesMetadata.getObject(propertyName);
       Schema propertySchema = propertySchema(propertyName, propertyMetadata);
       fields.add(Schema.Field.of(propertyName, propertySchema));
@@ -200,7 +215,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
         Schema componentSchema = propertySchema(propertyName, componentMetadata);
         return Schema.nullableOf(Schema.arrayOf(componentSchema));
       case "object":
-        Schema objectSchema = recordSchema(propertyName, propertyMetadata);
+        Schema objectSchema = recordSchema(propertyName, propertyMetadata, null);
         return Schema.nullableOf(objectSchema);
       default:
         // this should never happen
