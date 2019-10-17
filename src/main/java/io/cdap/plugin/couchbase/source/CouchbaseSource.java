@@ -338,7 +338,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     }
 
     public List<String> getSelectFieldsList() {
-      return Arrays.asList(getSelectFields().split(","));
+      return Arrays.stream(getSelectFields().split(",")).map(String::trim).collect(Collectors.toList());
     }
 
     public Consistency getScanConsistency() {
@@ -386,12 +386,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
             .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
         }
       }
-      // TODO Couchbase Server 4.5 introduces INFER, a N1QL statement that infers the metadata of documents.
-      // This can be used to infer the Output Schema.
-      if (!containsMacro(CouchbaseConstants.SCHEMA) && Strings.isNullOrEmpty(schema)) {
-        collector.addFailure("Output schema must be specified", null)
-          .withConfigProperty(CouchbaseConstants.SCHEMA);
-      } else if (!containsMacro(CouchbaseConstants.SCHEMA)) {
+      if (!containsMacro(CouchbaseConstants.SCHEMA) && !Strings.isNullOrEmpty(schema)) {
         Schema parsedSchema = getParsedSchema();
         validateSchema(parsedSchema, collector);
       }
