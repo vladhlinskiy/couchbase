@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
@@ -140,6 +141,9 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       Assert.assertNotNull(actualCreatedAt);
       JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
       Assert.assertNotNull(expected);
+      assertNumericEquals(expected, actual);
+      assertMapEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
       assertEquals(expected, actual);
     }
   }
@@ -154,6 +158,9 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       Assert.assertNotNull(actualCreatedAt);
       JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
       Assert.assertNotNull(expected);
+      assertNumericEquals(expected, actual);
+      assertMapEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
       assertEquals(expected, actual);
     }
   }
@@ -192,6 +199,76 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
       Assert.assertNotNull(expected);
       Assert.assertEquals(expected.id(), actual.get("id"));
+      assertNumericEquals(expected, actual);
+      assertMapEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
+  public void testSourceInferredSchema() throws Exception {
+    Map<String, String> properties = sourceProperties("*", null);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (StructuredRecord actual : records) {
+      String actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(Long.valueOf(actualCreatedAt));
+      Assert.assertNotNull(expected);
+      assertNumericEqualsAsStrings(expected, actual);
+      assertRecordEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
+  public void testSourceWithConditionsInferredSchema() throws Exception {
+    Map<String, String> properties = sourceProperties("*", "`boolean` = true", null);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(1, records.size()); // single document satisfies the criteria
+    for (StructuredRecord actual : records) {
+      String actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(Long.valueOf(actualCreatedAt));
+      Assert.assertNotNull(expected);
+      assertNumericEqualsAsStrings(expected, actual);
+      assertRecordEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
+  public void testSourceSingleFieldInferredSchema() throws Exception {
+    Map<String, String> properties = sourceProperties("created", null);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (StructuredRecord actual : records) {
+      String actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(Long.valueOf(actualCreatedAt));
+      Assert.assertNotNull(expected);
+    }
+  }
+
+  @Test
+  public void testSourceIncludeIdInferredSchema() throws Exception {
+    String bucketName = BASE_PROPERTIES.get(CouchbaseConstants.BUCKET);
+    String selectFields = String.format("meta(`%s`).id, *", bucketName);
+    Map<String, String> properties = sourceProperties(selectFields, null);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (StructuredRecord actual : records) {
+      String actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(Long.valueOf(actualCreatedAt));
+      Assert.assertNotNull(expected);
+      Assert.assertEquals(expected.id(), actual.get("id"));
+      assertNumericEqualsAsStrings(expected, actual);
+      assertRecordEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
       assertEquals(expected, actual);
     }
   }
@@ -204,23 +281,62 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       .orElse(null);
   }
 
-  private void assertEquals(JsonDocument expected, StructuredRecord actual) {
+  private void assertNumericEquals(JsonDocument expected, StructuredRecord actual) {
     JsonObject content = expected.content();
-    Assert.assertEquals(content.getBoolean("boolean"), actual.<Boolean>get("boolean"));
     Assert.assertEquals(content.getDouble("number_double"), actual.<Double>get("number_double"));
     Assert.assertEquals(content.getInt("number_int"), actual.<Integer>get("number_int"));
     Assert.assertEquals(content.getLong("number_long"), actual.<Long>get("number_long"));
     Assert.assertEquals(content.getBigDecimal("number_decimal"), actual.getDecimal("number_decimal"));
     Assert.assertEquals(content.getBigInteger("number_big_int"), actual.getDecimal("number_big_int").unscaledValue());
+
+    JsonArray numberArrayExpected = content.getArray("number_array");
+    List<Number> numberArrayActual = actual.get("number_array");
+    Assert.assertEquals(numberArrayExpected.toList(), numberArrayActual);
+  }
+
+  private void assertNumericEqualsAsStrings(JsonDocument expected, StructuredRecord actual) {
+    JsonObject content = expected.content();
+    Assert.assertEquals(content.getDouble("number_double").toString(), actual.<String>get("number_double"));
+    Assert.assertEquals(content.getInt("number_int").toString(), actual.<String>get("number_int"));
+    Assert.assertEquals(content.getLong("number_long").toString(), actual.<String>get("number_long"));
+
+    if (new BigDecimal("0.00").equals(content.getBigDecimal("number_decimal"))) {
+      // Couchabse stores '0.00' as '0' and scale/precision can not be honored when reading as string
+      String actualStringValue = actual.get("number_decimal");
+      Assert.assertNotNull(actualStringValue);
+      Assert.assertEquals(0.0d, Double.valueOf(actualStringValue), 0.00001);
+    } else {
+      Assert.assertEquals(content.getBigDecimal("number_decimal").toString(), actual.<String>get("number_decimal"));
+    }
+    Assert.assertEquals(content.getBigInteger("number_big_int").toString(), actual.<String>get("number_big_int"));
+
+    List<String> numberArrayExpected = content.getArray("number_array").toList().stream()
+      .map(Object::toString)
+      .collect(Collectors.toList());
+    List<String> numberArrayActual = actual.get("number_array");
+    Assert.assertEquals(numberArrayExpected, numberArrayActual);
+  }
+
+  private void assertMapEquals(String fieldName, JsonDocument expected, StructuredRecord actual) {
+    JsonObject innerObjectMapExpected = expected.content().getObject(fieldName);
+    Map<String, String> innerObjectMapActual = actual.get(fieldName);
+    for (String key : innerObjectMapExpected.getNames()) {
+      Assert.assertEquals(innerObjectMapExpected.get(key), innerObjectMapActual.get(key));
+    }
+  }
+
+  private void assertRecordEquals(String fieldName, JsonDocument expected, StructuredRecord actual) {
+    JsonObject innerObjectMapExpected = expected.content().getObject(fieldName);
+    StructuredRecord innerObjectActual = actual.get(fieldName);
+    for (String key : innerObjectMapExpected.getNames()) {
+      Assert.assertEquals(innerObjectMapExpected.get(key), innerObjectActual.get(key));
+    }
+  }
+
+  private void assertEquals(JsonDocument expected, StructuredRecord actual) {
+    JsonObject content = expected.content();
+    Assert.assertEquals(content.getBoolean("boolean"), actual.<Boolean>get("boolean"));
     Assert.assertEquals(content.getString("string"), actual.<String>get("string"));
-
-    JsonObject innerObjectExpected = content.getObject("object");
-    StructuredRecord innerObjectActual = actual.get("object");
-    Assert.assertEquals(innerObjectExpected.getString("key"), innerObjectActual.<String>get("key"));
-
-    JsonObject innerObjectMapExpected = content.getObject("object_map");
-    Map<String, String> innerObjectMapActual = actual.get("object_map");
-    Assert.assertEquals(innerObjectMapExpected.getString("key"), innerObjectMapActual.get("key"));
 
     Assert.assertNull(actual.get("null"));
     Assert.assertEquals(content.getString("date_as_string"), actual.<String>get("date_as_string"));
@@ -228,10 +344,6 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
     JsonArray booleanArrayExpected = content.getArray("boolean_array");
     List<Boolean> booleanArrayActual = actual.get("boolean_array");
     Assert.assertEquals(booleanArrayExpected.toList(), booleanArrayActual);
-
-    JsonArray numberArrayExpected = content.getArray("number_array");
-    List<Number> numberArrayActual = actual.get("number_array");
-    Assert.assertEquals(numberArrayExpected.toList(), numberArrayActual);
 
     JsonArray objectArrayExpected = content.getArray("object_array");
     List<StructuredRecord> objectArrayActual = actual.get("object_array");
@@ -242,18 +354,19 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
     }
   }
 
-  private Map<String, String> sourceProperties(String selectFields, Schema schema) {
+  private Map<String, String> sourceProperties(String selectFields, @Nullable Schema schema) {
     return sourceProperties(selectFields, null, schema);
   }
 
-  private Map<String, String> sourceProperties(String selectFields, @Nullable String conditions, Schema schema) {
+  private Map<String, String> sourceProperties(String selectFields, @Nullable String conditions,
+                                               @Nullable Schema schema) {
     return new ImmutableMap.Builder<String, String>()
       .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
       .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
       .put(CouchbaseConstants.PASSWORD, BASE_PROPERTIES.get(CouchbaseConstants.PASSWORD))
       .put(CouchbaseConstants.BUCKET, BASE_PROPERTIES.get(CouchbaseConstants.BUCKET))
       .put(CouchbaseConstants.ON_ERROR, ErrorHandling.FAIL_PIPELINE.getDisplayName())
-      .put(CouchbaseConstants.SCHEMA, schema.toString())
+      .put(CouchbaseConstants.SCHEMA, schema != null ? schema.toString() : "")
       .put(CouchbaseConstants.SELECT_FIELDS, selectFields)
       .put(CouchbaseConstants.CONDITIONS, conditions != null ? conditions : "")
       .put(CouchbaseConstants.MAX_PARALLELISM, "0")
