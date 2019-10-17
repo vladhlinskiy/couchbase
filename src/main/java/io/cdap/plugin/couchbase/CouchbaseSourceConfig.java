@@ -52,13 +52,6 @@ public class CouchbaseSourceConfig extends PluginConfig {
 
   private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(Schema.LogicalType.DECIMAL);
 
-  /**
-   * Select fields may contain metadata fields such as meta(`travel-sample`).id that are not included to the inferred
-   * schema.
-   * TODO change inference logic to include these files to the inferred schema
-   */
-  private static final Set<String> METADATA_FIELD_NAMES = ImmutableSet.of("id", "rev", "expiration", "flags", "type");
-
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
   private String referenceName;
@@ -212,7 +205,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
   }
 
   public List<String> getSelectFieldsList() {
-    return Arrays.asList(getSelectFields().split(","));
+    return Arrays.stream(getSelectFields().split(",")).map(String::trim).collect(Collectors.toList());
   }
 
   public Consistency getScanConsistency() {
@@ -374,11 +367,6 @@ public class CouchbaseSourceConfig extends PluginConfig {
     for (Schema.Field field : providedSchema.getFields()) {
       Schema.Field inferredField = inferredSchema.getField(field.getName());
       if (inferredField == null) {
-        if (METADATA_FIELD_NAMES.contains(field.getName())) {
-          // Select fields may contain metadata fields such as meta(`travel-sample`).id that are not included to the
-          // inferred schema
-          continue;
-        }
         String errorMessage = String.format("Field '%s' does not exist in Couchbase", field.getName());
         collector.addFailure(errorMessage, String.format("Remove field '%s' from the output schema", field.getName()))
           .withOutputSchemaField(field.getName(), null);
