@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.couchbase;
+package io.cdap.plugin.couchbase.source;
 
 import com.couchbase.client.java.document.json.JsonArray;
 import com.couchbase.client.java.document.json.JsonObject;
@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.plugin.couchbase.source.JsonObjectToRecordTransformer;
+import io.cdap.plugin.couchbase.Consistency;
+import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
+import io.cdap.plugin.couchbase.ErrorHandling;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
