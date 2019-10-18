@@ -13,7 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.cdap.plugin.couchbase;
+package io.cdap.plugin.couchbase.source;
+
+import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 
 import javax.annotation.Nullable;
 

@@ -41,14 +41,15 @@ Data Types Mapping
     | boolean               | Boolean               |                                                    |
     | bytes                 | String                | base64 encoded String                              |
     | string                | String                |                                                    |
-    | date                  | String                | TODO format                                        |
+    | date                  | String                | Date string in the following format: yyyy-MM-dd    |
     | double                | Number                |                                                    |
     | decimal               | Number                |                                                    |
     | float                 | Number                |                                                    |
     | int                   | Number                |                                                    |
     | long                  | Number                |                                                    |
     | time                  | String                | Time string in the following format: HH:mm:ss.SSS  |
-    | timestamp             | String                | TODO format                                        |
+    | timestamp             | String                | Timestamp string in the following format:          |
+    |                       |                       | yyyy-MM-ddTHH:mm:ss.SSSZ[UTC]                      |
     | array                 | Array                 |                                                    |
     | record                | Object                |                                                    |
     | enum                  | String                |                                                    |
