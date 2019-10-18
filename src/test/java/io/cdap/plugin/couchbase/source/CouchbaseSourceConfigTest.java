@@ -14,13 +14,17 @@
  * the License.
  */
 
-package io.cdap.plugin.couchbase;
+package io.cdap.plugin.couchbase.source;
 
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.validation.CauseAttributes;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import io.cdap.plugin.common.Constants;
+import io.cdap.plugin.couchbase.Consistency;
+import io.cdap.plugin.couchbase.CouchbaseConstants;
+import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
+import io.cdap.plugin.couchbase.ErrorHandling;
 import org.junit.Assert;
 import org.junit.Test;
 
