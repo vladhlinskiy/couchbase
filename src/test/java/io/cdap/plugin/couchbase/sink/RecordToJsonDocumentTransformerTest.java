@@ -149,13 +149,9 @@ public class RecordToJsonDocumentTransformerTest {
     Assert.assertTrue(actualStringMap.containsKey("nested_map2"));
     Assert.assertTrue(actualStringMap.containsKey("nested_map3"));
 
-    // TODO avoid duplication
-    JsonObject stringMap1 = actualStringMap.getObject("nested_map1");
-    Assert.assertEquals(stringMap.get("nested_map1").get("k1"), stringMap1.get("k1"));
-    JsonObject stringMap2 = actualStringMap.getObject("nested_map2");
-    Assert.assertEquals(stringMap.get("nested_map2").get("k2"), stringMap2.get("k2"));
-    JsonObject stringMap3 = actualStringMap.getObject("nested_map3");
-    Assert.assertEquals(stringMap.get("nested_map3").get("k3"), stringMap3.get("k3"));
+    assertMapEquals(stringMap.get("nested_map1"), actualStringMap.getObject("nested_map1"));
+    assertMapEquals(stringMap.get("nested_map2"), actualStringMap.getObject("nested_map2"));
+    assertMapEquals(stringMap.get("nested_map3"), actualStringMap.getObject("nested_map3"));
 
     Assert.assertNotNull(jsonObject.get("nested_int_maps"));
     JsonObject actualIntMap = jsonObject.getObject("nested_int_maps");
@@ -163,12 +159,9 @@ public class RecordToJsonDocumentTransformerTest {
     Assert.assertTrue(actualIntMap.containsKey("nested_map2"));
     Assert.assertTrue(actualIntMap.containsKey("nested_map3"));
 
-    JsonObject intMap1 = actualIntMap.getObject("nested_map1");
-    Assert.assertEquals(intMap.get("nested_map1").get("k1"), intMap1.get("k1"));
-    JsonObject intMap2 = actualIntMap.getObject("nested_map2");
-    Assert.assertEquals(intMap.get("nested_map2").get("k2"), intMap2.get("k2"));
-    JsonObject intMap3 = actualIntMap.getObject("nested_map3");
-    Assert.assertEquals(intMap.get("nested_map3").get("k3"), intMap3.get("k3"));
+    assertMapEquals(intMap.get("nested_map1"), actualIntMap.getObject("nested_map1"));
+    assertMapEquals(intMap.get("nested_map2"), actualIntMap.getObject("nested_map2"));
+    assertMapEquals(intMap.get("nested_map3"), actualIntMap.getObject("nested_map3"));
 
     Assert.assertNotNull(jsonObject.get("nested_boolean_maps"));
     JsonObject actualBooleanMap = jsonObject.getObject("nested_boolean_maps");
@@ -176,12 +169,9 @@ public class RecordToJsonDocumentTransformerTest {
     Assert.assertTrue(actualBooleanMap.containsKey("nested_map2"));
     Assert.assertTrue(actualBooleanMap.containsKey("nested_map3"));
 
-    JsonObject booleanMap1 = actualBooleanMap.getObject("nested_map1");
-    Assert.assertEquals(booleanMap.get("nested_map1").get("k1"), booleanMap1.get("k1"));
-    JsonObject booleanMap2 = actualBooleanMap.getObject("nested_map2");
-    Assert.assertEquals(booleanMap.get("nested_map2").get("k2"), booleanMap2.get("k2"));
-    JsonObject booleanMap3 = actualBooleanMap.getObject("nested_map3");
-    Assert.assertEquals(booleanMap.get("nested_map3").get("k3"), booleanMap3.get("k3"));
+    assertMapEquals(booleanMap.get("nested_map1"), actualBooleanMap.getObject("nested_map1"));
+    assertMapEquals(booleanMap.get("nested_map2"), actualBooleanMap.getObject("nested_map2"));
+    assertMapEquals(booleanMap.get("nested_map3"), actualBooleanMap.getObject("nested_map3"));
   }
 
   @Test
@@ -655,5 +645,11 @@ public class RecordToJsonDocumentTransformerTest {
     Assert.assertEquals(inputRecord.getTime("time_millis").toString(), jsonObject.getString("time_millis"));
     Assert.assertEquals(inputRecord.getTime("time_micros").toString(), jsonObject.getString("time_micros"));
     Assert.assertEquals(inputRecord.getDate("date").toString(), jsonObject.getString("date"));
+  }
+
+  private void assertMapEquals(Map<String, ?> expected, JsonObject actual) {
+    for (String key : expected.keySet()) {
+      Assert.assertEquals(expected.get(key), actual.get(key));
+    }
   }
 }

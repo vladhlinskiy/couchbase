@@ -192,6 +192,17 @@ public class CouchbaseSinkConfig extends PluginConfig {
   }
 
   public void validateSchema(Schema schema, FailureCollector collector) {
+    if (!containsMacro(CouchbaseConstants.KEY_FIELD) && !Strings.isNullOrEmpty(keyField)) {
+      if (schema.getField(keyField) == null) {
+        collector.addFailure(String.format("Schema does not contain key field '%s'", keyField), null)
+          .withConfigProperty(CouchbaseConstants.SCHEMA)
+          .withConfigProperty(CouchbaseConstants.KEY_FIELD);
+      }
+    }
+    validateRecordSchema(schema, collector);
+  }
+
+  private void validateRecordSchema(Schema schema, FailureCollector collector) {
     if (schema == null) {
       collector.addFailure("Schema must be specified", null)
         .withConfigProperty(CouchbaseConstants.SCHEMA);
@@ -206,13 +217,6 @@ public class CouchbaseSinkConfig extends PluginConfig {
     for (Schema.Field field : fields) {
       validateFieldSchema(field.getName(), field.getSchema(), collector);
     }
-    if (!containsMacro(CouchbaseConstants.KEY_FIELD) && !Strings.isNullOrEmpty(keyField)) {
-      if (schema.getField(keyField) == null) {
-        collector.addFailure(String.format("Schema does not contain key field '%s'", keyField), null)
-          .withConfigProperty(CouchbaseConstants.SCHEMA)
-          .withConfigProperty(CouchbaseConstants.KEY_FIELD);
-      }
-    }
   }
 
   private void validateFieldSchema(String fieldName, Schema schema, FailureCollector collector) {
@@ -220,7 +224,7 @@ public class CouchbaseSinkConfig extends PluginConfig {
     Schema.Type type = nonNullableSchema.getType();
     switch (type) {
       case RECORD:
-        validateSchema(nonNullableSchema, collector);
+        validateRecordSchema(nonNullableSchema, collector);
         break;
       case ARRAY:
         validateArraySchema(fieldName, nonNullableSchema, collector);
