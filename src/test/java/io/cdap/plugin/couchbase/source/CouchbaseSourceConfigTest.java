@@ -23,7 +23,6 @@ import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.couchbase.Consistency;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 import io.cdap.plugin.couchbase.ErrorHandling;
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,7 +33,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 /**
- * Tests of {@link CouchbaseSourceConfig} methods.
+ * Tests of {@link CouchbaseSource.CouchbaseSourceConfig} methods.
  */
 public class CouchbaseSourceConfigTest {
 
@@ -49,7 +48,7 @@ public class CouchbaseSourceConfigTest {
                     Schema.Field.of("boolean_field", Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN))),
                     Schema.Field.of("decimal_field", Schema.nullableOf(Schema.decimalOf(10, 4))));
 
-  private static final CouchbaseSourceConfig VALID_CONFIG = CouchbaseSourceConfigBuilder.builder()
+  private static final CouchbaseSource.CouchbaseSourceConfig VALID_CONFIG = CouchbaseSourceConfigBuilder.builder()
     .setReferenceName("CouchbaseSource")
     .setNodes("localhost")
     .setBucket("travel-sample")
@@ -77,7 +76,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateReferenceNameNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setReferenceName(null)
       .build();
 
@@ -88,7 +87,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateReferenceNameEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setReferenceName("")
       .build();
 
@@ -99,7 +98,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateReferenceNameInvalid() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setReferenceName("**********")
       .build();
 
@@ -110,7 +109,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateNodesNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setNodes(null)
       .build();
 
@@ -121,7 +120,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateNodesEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setNodes("")
       .build();
 
@@ -132,7 +131,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateBucketNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setBucket(null)
       .build();
 
@@ -143,7 +142,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateBucketEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setBucket("")
       .build();
 
@@ -154,7 +153,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateErrorHandlingNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setOnError(null)
       .build();
 
@@ -165,7 +164,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateErrorHandlingEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setOnError("")
       .build();
 
@@ -176,7 +175,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateErrorHandlingInvalid() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setOnError("unknown-error-handling-strategy")
       .build();
 
@@ -187,7 +186,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateScanConsistencyNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setScanConsistency(null)
       .build();
 
@@ -198,7 +197,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateScanConsistencyEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setScanConsistency("")
       .build();
 
@@ -209,7 +208,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateScanConsistencyInvalid() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setScanConsistency("unknown-scan-consistency")
       .build();
 
@@ -220,7 +219,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateSelectFieldsNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSelectFields(null)
       .build();
 
@@ -231,7 +230,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateSelectFieldsEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSelectFields("")
       .build();
 
@@ -242,7 +241,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateQueryTimeoutZero() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setQueryTimeout(0)
       .build();
 
@@ -253,7 +252,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateQueryTimeoutInvalid() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setQueryTimeout(-100)
       .build();
 
@@ -264,7 +263,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateSchemaNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSchema(null)
       .build();
 
@@ -275,7 +274,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateSchemaEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSchema("")
       .build();
 
@@ -286,7 +285,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateUsernameNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setUser(null)
       .setPassword("username is null, but password specified")
       .build();
@@ -298,7 +297,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateUsernameEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setUser("")
       .setPassword("username is empty, but password specified")
       .build();
@@ -310,7 +309,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidatePasswordNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setUser("username specified, but password is null")
       .setPassword(null)
       .build();
@@ -322,7 +321,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidatePasswordEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setUser("username specified, but password is empty")
       .setPassword("")
       .build();
@@ -334,7 +333,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateUsernameAndPasswordNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setUser(null)
       .setPassword(null)
       .build();
@@ -346,7 +345,7 @@ public class CouchbaseSourceConfigTest {
 
   @Test
   public void testValidateUsernameAndPasswordEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setUser("")
       .setPassword("")
       .build();
@@ -369,7 +368,7 @@ public class CouchbaseSourceConfigTest {
   @Test
   public void testValidateSchemaInvalid() {
     Schema schema = Schema.recordOf("invalid-schema", Schema.Field.of("unsupported", Schema.of(Schema.Type.BYTES)));
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSchema(schema.toString())
       .build();
 
@@ -382,7 +381,7 @@ public class CouchbaseSourceConfigTest {
   public void testValidateComponentSchemaInvalid() {
     Schema schema = Schema.recordOf("invalid-schema",
                                     Schema.Field.of("unsupported", Schema.arrayOf(Schema.of(Schema.Type.BYTES))));
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSchema(schema.toString())
       .build();
 
@@ -396,7 +395,7 @@ public class CouchbaseSourceConfigTest {
     Schema schema = Schema.recordOf(
       "invalid-schema",
       Schema.Field.of("unsupported-key", Schema.mapOf(Schema.of(Schema.Type.LONG), Schema.of(Schema.Type.STRING))));
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSchema(schema.toString())
       .build();
 
@@ -410,7 +409,7 @@ public class CouchbaseSourceConfigTest {
     Schema nestedRecordSchema = Schema.recordOf("invalid-schema-nested",
                                                 Schema.Field.of("nested", Schema.of(Schema.Type.BYTES)));
     Schema schema = Schema.recordOf("invalid-schema", Schema.Field.of("object", nestedRecordSchema));
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSource.CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
       .setSchema(schema.toString())
       .build();
 

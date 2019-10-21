@@ -23,7 +23,6 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.couchbase.Consistency;
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 import io.cdap.plugin.couchbase.ErrorHandling;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -43,7 +42,7 @@ public class JsonObjectToRecordTransformerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private static CouchbaseSourceConfig config;
+  private static CouchbaseSource.CouchbaseSourceConfig config;
 
   @BeforeClass
   public static void setupTestClass() throws Exception {
@@ -190,7 +189,7 @@ public class JsonObjectToRecordTransformerTest {
       .put("nested_object", nestedJsonObject)
       .put("object_to_map", mapObject);
 
-    CouchbaseSourceConfig wildCardQueryConfig = CouchbaseSourceConfigBuilder.builder(config)
+    CouchbaseSource.CouchbaseSourceConfig wildCardQueryConfig = CouchbaseSourceConfigBuilder.builder(config)
       .setBucket("bucket-name")
       .setSelectFields("meta(`bucket-name`).id, *")
       .build();

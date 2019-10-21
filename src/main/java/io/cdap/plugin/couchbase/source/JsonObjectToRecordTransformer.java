@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -40,10 +39,10 @@ import javax.annotation.Nullable;
  */
 public class JsonObjectToRecordTransformer {
 
-  private final CouchbaseSourceConfig config;
+  private final CouchbaseSource.CouchbaseSourceConfig config;
   private final Schema schema;
 
-  public JsonObjectToRecordTransformer(CouchbaseSourceConfig config, Schema schema) {
+  public JsonObjectToRecordTransformer(CouchbaseSource.CouchbaseSourceConfig config, Schema schema) {
     this.config = config;
     this.schema = schema;
   }
