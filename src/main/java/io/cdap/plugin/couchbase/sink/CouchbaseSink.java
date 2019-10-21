@@ -65,7 +65,9 @@ public class CouchbaseSink extends ReferenceBatchSink<StructuredRecord, NullWrit
     FailureCollector collector = stageConfigurer.getFailureCollector();
     config.validate(collector);
     Schema inputSchema = stageConfigurer.getInputSchema();
-    config.validateSchema(inputSchema, collector);
+    if (inputSchema != null) {
+      config.validateSchema(inputSchema, collector);
+    }
     collector.getOrThrowException();
   }
 
