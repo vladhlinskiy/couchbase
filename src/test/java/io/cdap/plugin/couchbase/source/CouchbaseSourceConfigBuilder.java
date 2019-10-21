@@ -84,7 +84,7 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
     return this;
   }
 
-  public CouchbaseSourceConfigBuilder setSchema(String schema) {
+  public CouchbaseSourceConfigBuilder setSchema(@Nullable String schema) {
     this.schema = schema;
     return this;
   }

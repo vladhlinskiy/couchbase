@@ -17,6 +17,7 @@
 package io.cdap.plugin.couchbase;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -37,6 +38,13 @@ import javax.annotation.Nullable;
  * Defines a base {@link PluginConfig} that Couchbase Source and Sink can re-use.
  */
 public class CouchbaseConfig extends PluginConfig {
+
+  /**
+   * Select fields may contain metadata fields such as meta(`travel-sample`).id that are not included to the inferred
+   * schema.
+   * TODO change inference logic to include these files to the inferred schema
+   */
+  private static final Set<String> METADATA_FIELD_NAMES = ImmutableSet.of("id", "rev", "expiration", "flags", "type");
 
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
@@ -216,5 +224,66 @@ public class CouchbaseConfig extends PluginConfig {
                                         fieldName, fieldSchema.getDisplayName(), supportedTypeNames);
     collector.addFailure(errorMessage, String.format("Change field '%s' to be a supported type", fieldName))
       .withOutputSchemaField(fieldName, null);
+  }
+
+  /**
+   * Validate that the provided schema is compatible with the inferred schema. The provided schema is compatible if
+   * every field is compatible with the corresponding field in the inferred schema. A field is compatible if it is of
+   * the same type or is a nullable version of that type. It is assumed that both schemas are record schemas.
+   *
+   * @param inferredSchema the inferred schema
+   * @param providedSchema the provided schema to check compatibility
+   * @param collector      failure collector
+   * @throws IllegalArgumentException if the schemas are not type compatible
+   */
+  public static void validateFieldsMatch(Schema inferredSchema, Schema providedSchema, FailureCollector collector) {
+    for (Schema.Field field : providedSchema.getFields()) {
+      Schema.Field inferredField = inferredSchema.getField(field.getName());
+      if (inferredField == null) {
+        if (METADATA_FIELD_NAMES.contains(field.getName())) {
+          // Select fields may contain metadata fields such as meta(`travel-sample`).id that are not included to the
+          // inferred schema
+          continue;
+        }
+        String errorMessage = String.format("Field '%s' does not exist in Couchbase", field.getName());
+        collector.addFailure(errorMessage, String.format("Remove field '%s' from the output schema", field.getName()))
+          .withOutputSchemaField(field.getName(), null);
+      }
+      Schema inferredFieldSchema = inferredField.getSchema();
+      Schema providedFieldSchema = field.getSchema();
+
+      boolean isInferredFieldNullable = inferredFieldSchema.isNullable();
+      boolean isProvidedFieldNullable = providedFieldSchema.isNullable();
+
+      Schema inferredFieldNonNullableSchema = isInferredFieldNullable
+        ? inferredFieldSchema.getNonNullable() : inferredFieldSchema;
+      Schema providedFieldNonNullableSchema = isProvidedFieldNullable ?
+        providedFieldSchema.getNonNullable() : providedFieldSchema;
+
+      Schema.Type inferredType = inferredFieldNonNullableSchema.getType();
+      Schema.LogicalType inferredLogicalType = inferredFieldNonNullableSchema.getLogicalType();
+      Schema.Type providedType = providedFieldNonNullableSchema.getType();
+      Schema.LogicalType providedLogicalType = providedFieldNonNullableSchema.getLogicalType();
+      if (inferredType != providedType && inferredLogicalType != providedLogicalType) {
+        boolean isProvidedTypeNumeric = providedType == Schema.Type.INT || providedType == Schema.Type.LONG
+          || providedType == Schema.Type.DOUBLE || providedLogicalType == Schema.LogicalType.DECIMAL;
+        if (inferredType == Schema.Type.STRING && isProvidedTypeNumeric) {
+          // 'string' is the default type for Couchbase's 'number' type in the inferred schema
+          continue;
+        }
+        String errorMessage = String.format("Expected field '%s' to be of type '%s', but it is of type '%s'",
+                                            field.getName(), inferredFieldNonNullableSchema.getDisplayName(),
+                                            providedFieldNonNullableSchema.getDisplayName());
+
+        collector.addFailure(errorMessage, String.format("Change field '%s' to be a supported type", field.getName()))
+          .withOutputSchemaField(field.getName(), null);
+      }
+
+      if (!isInferredFieldNullable && isProvidedFieldNullable) {
+        String errorMessage = String.format("Field '%s' should not be nullable", field.getName());
+        collector.addFailure(errorMessage, String.format("Change field '%s' to be non-nullable", field.getName()))
+          .withOutputSchemaField(field.getName(), null);
+      }
+    }
   }
 }
