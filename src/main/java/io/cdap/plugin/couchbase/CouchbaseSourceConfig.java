@@ -57,7 +57,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
   private String referenceName;
 
   @Name(CouchbaseConstants.NODES)
-  @Description("List of nodes to use when connecting to the Couchbase cluster..")
+  @Description("List of nodes to use when connecting to the Couchbase cluster.")
   @Macro
   private String nodes;
 
