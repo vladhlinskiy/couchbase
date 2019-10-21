@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.cdap.cdap.api.data.batch.OutputFormatProvider;
-import io.cdap.plugin.couchbase.CouchbaseSinkConfig;
 
 import java.util.Map;
 
@@ -32,7 +31,7 @@ public class CouchbaseOutputFormatProvider implements OutputFormatProvider {
   private static final Gson gson = new GsonBuilder().create();
   private final Map<String, String> conf;
 
-  public CouchbaseOutputFormatProvider(CouchbaseSinkConfig config) {
+  public CouchbaseOutputFormatProvider(CouchbaseSink.CouchbaseSinkConfig config) {
     this.conf = new ImmutableMap.Builder<String, String>()
       .put(PROPERTY_CONFIG_JSON, gson.toJson(config))
       .build();

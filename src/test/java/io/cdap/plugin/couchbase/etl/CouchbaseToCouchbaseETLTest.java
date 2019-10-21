@@ -230,9 +230,9 @@ public class CouchbaseToCouchbaseETLTest extends BaseCouchbaseETLTest {
     Assert.assertNull(actual.get("null"));
     Assert.assertEquals(expected.getString("date_as_string"), actual.getString("date_as_string"));
 
-    Assert.assertEquals(expected.getArray("boolean_array").toList(), actual.getArray("boolean_array").toList());
-    Assert.assertEquals(expected.getArray("number_array").toList(), actual.getArray("number_array").toList());
-    Assert.assertEquals(expected.getArray("object_array").toList(), actual.getArray("object_array").toList());
+    Assert.assertEquals(expected.getArray("boolean_array"), actual.getArray("boolean_array"));
+    Assert.assertEquals(expected.getArray("number_array"), actual.getArray("number_array"));
+    Assert.assertEquals(expected.getArray("object_array"), actual.getArray("object_array"));
   }
 
   @AfterClass

@@ -53,7 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class CouchbaseSInkETLTest extends BaseCouchbaseETLTest {
+public class CouchbaseSinkETLTest extends BaseCouchbaseETLTest {
 
   private static final ZonedDateTime DATE_TIME = ZonedDateTime.now(ZoneOffset.UTC);
   private static final Schema NESTED_SCHEMA = Schema.recordOf(

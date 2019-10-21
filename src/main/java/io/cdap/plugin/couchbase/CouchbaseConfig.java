@@ -17,7 +17,6 @@
 package io.cdap.plugin.couchbase;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -26,7 +25,6 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.IdUtils;
-import io.cdap.plugin.couchbase.sink.CouchbaseSink;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,28 +34,16 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
- * TODO avoid duplication
- * Defines a {@link PluginConfig} that {@link CouchbaseSink} can use.
+ * Defines a base {@link PluginConfig} that Couchbase Source and Sink can re-use.
  */
-public class CouchbaseSinkConfig extends PluginConfig {
-
-  private static final Set<Schema.Type> SUPPORTED_SIMPLE_TYPES = ImmutableSet.of(Schema.Type.ARRAY, Schema.Type.BOOLEAN,
-                                                                                 Schema.Type.BYTES, Schema.Type.STRING,
-                                                                                 Schema.Type.DOUBLE, Schema.Type.FLOAT,
-                                                                                 Schema.Type.INT, Schema.Type.LONG,
-                                                                                 Schema.Type.RECORD, Schema.Type.ENUM,
-                                                                                 Schema.Type.MAP, Schema.Type.UNION);
-
-  private static final Set<Schema.LogicalType> SUPPORTED_LOGICAL_TYPES = ImmutableSet.of(
-    Schema.LogicalType.DATE, Schema.LogicalType.DECIMAL, Schema.LogicalType.TIME_MILLIS, Schema.LogicalType.TIME_MICROS,
-    Schema.LogicalType.TIMESTAMP_MILLIS, Schema.LogicalType.TIMESTAMP_MICROS);
+public class CouchbaseConfig extends PluginConfig {
 
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
   private String referenceName;
 
   @Name(CouchbaseConstants.NODES)
-  @Description("List of nodes to use when connecting to the Couchbase cluster..")
+  @Description("List of nodes to use when connecting to the Couchbase cluster.")
   @Macro
   private String nodes;
 
@@ -65,16 +51,6 @@ public class CouchbaseSinkConfig extends PluginConfig {
   @Description("Couchbase bucket name.")
   @Macro
   private String bucket;
-
-  @Name(CouchbaseConstants.KEY_FIELD)
-  @Description("Allows to specify which of the incoming fields should be used as an document identifier.")
-  @Macro
-  private String keyField;
-
-  @Name(CouchbaseConstants.OPERATION)
-  @Description("Type of write operation to perform. This can be set to Insert, Replace or Upsert.")
-  @Macro
-  private String operation;
 
   @Name(CouchbaseConstants.USERNAME)
   @Description("User identity for connecting to the Couchbase.")
@@ -88,23 +64,12 @@ public class CouchbaseSinkConfig extends PluginConfig {
   @Nullable
   private String password;
 
-  @Name(CouchbaseConstants.BATCH_SIZE)
-  @Description("Size (in number of records) of the batched writes to the Couchbase bucket. Each write to Couchbase " +
-    "contains some overhead. To maximize bulk write throughput, maximize the amount of data stored per write. " +
-    "Commits of 1 MiB usually provide the best performance. Default value is 100 records.")
-  @Macro
-  private Integer batchSize;
-
-  public CouchbaseSinkConfig(String referenceName, String nodes, String bucket, String keyField, String operation,
-                             String user, String password, Integer batchSize) {
+  public CouchbaseConfig(String referenceName, String nodes, String bucket, String user, String password) {
     this.referenceName = referenceName;
     this.nodes = nodes;
     this.bucket = bucket;
-    this.keyField = keyField;
-    this.operation = operation;
     this.user = user;
     this.password = password;
-    this.batchSize = batchSize;
   }
 
   public String getReferenceName() {
@@ -119,14 +84,6 @@ public class CouchbaseSinkConfig extends PluginConfig {
     return bucket;
   }
 
-  public String getKeyField() {
-    return keyField;
-  }
-
-  public String getOperation() {
-    return operation;
-  }
-
   @Nullable
   public String getUser() {
     return user;
@@ -137,20 +94,12 @@ public class CouchbaseSinkConfig extends PluginConfig {
     return password;
   }
 
-  public Integer getBatchSize() {
-    return batchSize;
-  }
-
   public List<String> getNodeList() {
     return Arrays.asList(getNodes().split(","));
   }
 
-  public OperationType getOperationType() {
-    return OperationType.valueOf(operation);
-  }
-
   /**
-   * Validates {@link CouchbaseSinkConfig} instance.
+   * Validates {@link CouchbaseConfig} instance.
    *
    * @param collector failure collector.
    */
@@ -175,10 +124,6 @@ public class CouchbaseSinkConfig extends PluginConfig {
       collector.addFailure("Bucket name must be specified", null)
         .withConfigProperty(CouchbaseConstants.BUCKET);
     }
-    if (!containsMacro(CouchbaseConstants.KEY_FIELD) && Strings.isNullOrEmpty(keyField)) {
-      collector.addFailure("Key field name must be specified", null)
-        .withConfigProperty(CouchbaseConstants.KEY_FIELD);
-    }
     if (!containsMacro(CouchbaseConstants.USERNAME) && !containsMacro(CouchbaseConstants.PASSWORD) &&
       Strings.isNullOrEmpty(user) && !Strings.isNullOrEmpty(password)) {
       collector.addFailure("Username must be specified", null)
@@ -191,18 +136,22 @@ public class CouchbaseSinkConfig extends PluginConfig {
     }
   }
 
-  public void validateSchema(Schema schema, FailureCollector collector) {
-    if (!containsMacro(CouchbaseConstants.KEY_FIELD) && !Strings.isNullOrEmpty(keyField)) {
-      if (schema.getField(keyField) == null) {
-        collector.addFailure(String.format("Schema does not contain key field '%s'", keyField), null)
-          .withConfigProperty(CouchbaseConstants.SCHEMA)
-          .withConfigProperty(CouchbaseConstants.KEY_FIELD);
-      }
-    }
-    validateRecordSchema(schema, collector);
+  /**
+   * Validates given input/output schema according the the specified supported types. Fields of types
+   * {@link Schema.Type#RECORD}, {@link Schema.Type#ARRAY}, {@link Schema.Type#MAP} will be validated recursively.
+   *
+   * @param schema                schema to validate.
+   * @param supportedLogicalTypes set of supported logical types.
+   * @param supportedTypes        set of supported types.
+   * @param collector             failure collector.
+   */
+  public void validateSchema(Schema schema, Set<Schema.LogicalType> supportedLogicalTypes,
+                             Set<Schema.Type> supportedTypes, FailureCollector collector) {
+    validateRecordSchema(schema, supportedLogicalTypes, supportedTypes, collector);
   }
 
-  private void validateRecordSchema(Schema schema, FailureCollector collector) {
+  private void validateRecordSchema(Schema schema, Set<Schema.LogicalType> supportedLogicalTypes,
+                                    Set<Schema.Type> supportedTypes, FailureCollector collector) {
     if (schema == null) {
       collector.addFailure("Schema must be specified", null)
         .withConfigProperty(CouchbaseConstants.SCHEMA);
@@ -215,54 +164,58 @@ public class CouchbaseSinkConfig extends PluginConfig {
       return;
     }
     for (Schema.Field field : fields) {
-      validateFieldSchema(field.getName(), field.getSchema(), collector);
+      validateFieldSchema(field.getName(), field.getSchema(), supportedLogicalTypes, supportedTypes, collector);
     }
   }
 
-  private void validateFieldSchema(String fieldName, Schema schema, FailureCollector collector) {
+  private void validateFieldSchema(String fieldName, Schema schema, Set<Schema.LogicalType> supportedLogicalTypes,
+                                   Set<Schema.Type> supportedTypes, FailureCollector collector) {
     Schema nonNullableSchema = schema.isNullable() ? schema.getNonNullable() : schema;
     Schema.Type type = nonNullableSchema.getType();
     switch (type) {
       case RECORD:
-        validateRecordSchema(nonNullableSchema, collector);
+        validateRecordSchema(nonNullableSchema, supportedLogicalTypes, supportedTypes, collector);
         break;
       case ARRAY:
-        validateArraySchema(fieldName, nonNullableSchema, collector);
+        validateArraySchema(fieldName, nonNullableSchema, supportedLogicalTypes, supportedTypes, collector);
         break;
       case MAP:
-        validateMapSchema(fieldName, nonNullableSchema, collector);
+        validateMapSchema(fieldName, nonNullableSchema, supportedLogicalTypes, supportedTypes, collector);
         break;
       default:
-        validateSchemaType(fieldName, nonNullableSchema, collector);
+        validateSchemaType(fieldName, nonNullableSchema, supportedLogicalTypes, supportedTypes, collector);
     }
   }
 
-  private void validateMapSchema(String fieldName, Schema schema, FailureCollector collector) {
+  private void validateMapSchema(String fieldName, Schema schema, Set<Schema.LogicalType> supportedLogicalTypes,
+                                 Set<Schema.Type> supportedTypes, FailureCollector collector) {
     Schema keySchema = schema.getMapSchema().getKey();
     if (keySchema.isNullable() || keySchema.getType() != Schema.Type.STRING) {
       collector.addFailure("Map keys must be a non-nullable string",
                            String.format("Change field '%s' to be a non-nullable string", fieldName))
         .withOutputSchemaField(fieldName, null);
     }
-    validateFieldSchema(fieldName, schema.getMapSchema().getValue(), collector);
+    validateFieldSchema(fieldName, schema.getMapSchema().getValue(), supportedLogicalTypes, supportedTypes, collector);
   }
 
-  private void validateArraySchema(String fieldName, Schema schema, FailureCollector collector) {
+  private void validateArraySchema(String fieldName, Schema schema, Set<Schema.LogicalType> supportedLogicalTypes,
+                                   Set<Schema.Type> supportedTypes, FailureCollector collector) {
     Schema componentSchema = schema.getComponentSchema().isNullable() ? schema.getComponentSchema().getNonNullable()
       : schema.getComponentSchema();
-    validateFieldSchema(fieldName, componentSchema, collector);
+    validateFieldSchema(fieldName, componentSchema, supportedLogicalTypes, supportedTypes, collector);
   }
 
-  private void validateSchemaType(String fieldName, Schema fieldSchema, FailureCollector collector) {
+  private void validateSchemaType(String fieldName, Schema fieldSchema, Set<Schema.LogicalType> supportedLogicalTypes,
+                                  Set<Schema.Type> supportedTypes, FailureCollector collector) {
     Schema.Type type = fieldSchema.getType();
     Schema.LogicalType logicalType = fieldSchema.getLogicalType();
-    if (SUPPORTED_SIMPLE_TYPES.contains(type) || SUPPORTED_LOGICAL_TYPES.contains(logicalType)) {
+    if (supportedTypes.contains(type) || supportedLogicalTypes.contains(logicalType)) {
       return;
     }
 
     String supportedTypeNames = Stream.concat(
-      SUPPORTED_SIMPLE_TYPES.stream().map(Enum::name).map(String::toLowerCase),
-      SUPPORTED_LOGICAL_TYPES.stream().map(Schema.LogicalType::getToken)
+      supportedTypes.stream().map(Enum::name).map(String::toLowerCase),
+      supportedLogicalTypes.stream().map(Schema.LogicalType::getToken)
     ).collect(Collectors.joining(", "));
 
     String errorMessage = String.format("Field '%s' is of unsupported type '%s'. Supported types are: %s",
