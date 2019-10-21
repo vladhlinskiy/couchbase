@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.cdap.cdap.api.data.batch.InputFormatProvider;
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 
 import java.util.Map;
 
@@ -33,7 +32,7 @@ public class N1qlQueryRowInputFormatProvider implements InputFormatProvider {
 
   private final Map<String, String> conf;
 
-  public N1qlQueryRowInputFormatProvider(CouchbaseSourceConfig config) {
+  public N1qlQueryRowInputFormatProvider(CouchbaseSource.CouchbaseSourceConfig config) {
     this.conf = new ImmutableMap.Builder<String, String>()
       .put(PROPERTY_CONFIG_JSON, gson.toJson(config))
       .build();

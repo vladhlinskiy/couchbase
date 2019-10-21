@@ -28,7 +28,6 @@ import com.couchbase.client.java.query.dsl.Expression;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
 import io.cdap.plugin.couchbase.exception.CouchbaseExecutionException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -64,8 +63,8 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   @Override
   public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
     Configuration conf = taskAttemptContext.getConfiguration();
-    String configJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
-    CouchbaseSourceConfig config = gson.fromJson(configJson, CouchbaseSourceConfig.class);
+    String confJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
+    CouchbaseSource.CouchbaseSourceConfig config = gson.fromJson(confJson, CouchbaseSource.CouchbaseSourceConfig.class);
 
     this.cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {

@@ -22,7 +22,6 @@ import com.couchbase.client.java.document.JsonDocument;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.cdap.plugin.couchbase.CouchbaseSinkConfig;
 import io.cdap.plugin.couchbase.OperationType;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -54,7 +53,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
   public CouchbaseRecordWriter(TaskAttemptContext taskAttemptContext) {
     Configuration conf = taskAttemptContext.getConfiguration();
     String configJson = conf.get(CouchbaseOutputFormatProvider.PROPERTY_CONFIG_JSON);
-    CouchbaseSinkConfig config = gson.fromJson(configJson, CouchbaseSinkConfig.class);
+    CouchbaseSink.CouchbaseSinkConfig config = gson.fromJson(configJson, CouchbaseSink.CouchbaseSinkConfig.class);
 
     Cluster cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {

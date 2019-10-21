@@ -15,33 +15,30 @@
  */
 package io.cdap.plugin.couchbase.source;
 
-import io.cdap.plugin.couchbase.CouchbaseSourceConfig;
+import io.cdap.plugin.couchbase.CouchbaseConfigBuilder;
 
 import javax.annotation.Nullable;
 
 /**
- * Builder class that provides handy methods to construct {@link CouchbaseSourceConfig} for testing.
+ * Builder class that provides handy methods to construct {@link CouchbaseSource.CouchbaseSourceConfig} for testing.
  */
-public class CouchbaseSourceConfigBuilder {
+public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<CouchbaseSourceConfigBuilder> {
 
-  protected String referenceName;
-  protected String nodes;
-  protected String bucket;
-  protected String selectFields;
-  protected String conditions;
-  protected String user;
-  protected String password;
-  protected String onError;
-  protected String schema;
-  protected int maxParallelism;
-  protected String scanConsistency;
-  protected int timeout;
+  private String selectFields;
+  private String onError;
+  private String schema;
+  private int maxParallelism;
+  private String scanConsistency;
+  private int timeout;
+
+  @Nullable
+  private String conditions;
 
   public static CouchbaseSourceConfigBuilder builder() {
     return new CouchbaseSourceConfigBuilder();
   }
 
-  public static CouchbaseSourceConfigBuilder builder(CouchbaseSourceConfig original) {
+  public static CouchbaseSourceConfigBuilder builder(CouchbaseSource.CouchbaseSourceConfig original) {
     return builder()
       .setReferenceName(original.getReferenceName())
       .setNodes(original.getNodes())
@@ -57,21 +54,6 @@ public class CouchbaseSourceConfigBuilder {
       .setSchema(original.getSchema());
   }
 
-  public CouchbaseSourceConfigBuilder setReferenceName(String referenceName) {
-    this.referenceName = referenceName;
-    return this;
-  }
-
-  public CouchbaseSourceConfigBuilder setNodes(String nodes) {
-    this.nodes = nodes;
-    return this;
-  }
-
-  public CouchbaseSourceConfigBuilder setBucket(String bucket) {
-    this.bucket = bucket;
-    return this;
-  }
-
   public CouchbaseSourceConfigBuilder setSelectFields(String selectFields) {
     this.selectFields = selectFields;
     return this;
@@ -79,16 +61,6 @@ public class CouchbaseSourceConfigBuilder {
 
   public CouchbaseSourceConfigBuilder setConditions(@Nullable String conditions) {
     this.conditions = conditions;
-    return this;
-  }
-
-  public CouchbaseSourceConfigBuilder setUser(@Nullable String user) {
-    this.user = user;
-    return this;
-  }
-
-  public CouchbaseSourceConfigBuilder setPassword(@Nullable String password) {
-    this.password = password;
     return this;
   }
 
@@ -117,8 +89,9 @@ public class CouchbaseSourceConfigBuilder {
     return this;
   }
 
-  public CouchbaseSourceConfig build() {
-    return new CouchbaseSourceConfig(referenceName, nodes, bucket, selectFields, conditions, user, password, onError,
-                                     schema, maxParallelism, scanConsistency, timeout);
+  public CouchbaseSource.CouchbaseSourceConfig build() {
+    return new CouchbaseSource.CouchbaseSourceConfig(referenceName, nodes, bucket, user, password, selectFields,
+                                                     conditions, onError, schema, maxParallelism, scanConsistency,
+                                                     timeout);
   }
 }
