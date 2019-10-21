@@ -104,7 +104,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
   @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less " +
     "than zero or greater than the total number of cores in a cluster, the system will use all available cores in " +
     "the cluster.")
-  private Integer maxParallelism;
+  private int maxParallelism;
 
   @Name(CouchbaseConstants.SCAN_CONSISTENCY)
   @Description("Specifies the consistency guarantee or constraint for index scanning.")
@@ -112,11 +112,11 @@ public class CouchbaseSourceConfig extends PluginConfig {
 
   @Name(CouchbaseConstants.QUERY_TIMEOUT)
   @Description("Number of seconds to wait before a timeout has occurred on a query.")
-  private Integer timeout;
+  private int timeout;
 
   public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String selectFields,
                                String conditions, String user, String password, String onError, String schema,
-                               Integer maxParallelism, String consistency, Integer timeout) {
+                               int maxParallelism, String consistency, int timeout) {
     this.referenceName = referenceName;
     this.nodes = nodes;
     this.bucket = bucket;
@@ -170,7 +170,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
     return schema;
   }
 
-  public Integer getMaxParallelism() {
+  public int getMaxParallelism() {
     return maxParallelism;
   }
 
@@ -178,7 +178,7 @@ public class CouchbaseSourceConfig extends PluginConfig {
     return consistency;
   }
 
-  public Integer getTimeout() {
+  public int getTimeout() {
     return timeout;
   }
 
@@ -264,10 +264,6 @@ public class CouchbaseSourceConfig extends PluginConfig {
           .withConfigProperty(CouchbaseConstants.ON_ERROR);
       }
     }
-    if (!containsMacro(CouchbaseConstants.MAX_PARALLELISM) && maxParallelism == null) {
-      collector.addFailure("Max parallelism must be specified", null)
-        .withConfigProperty(CouchbaseConstants.MAX_PARALLELISM);
-    }
     if (!containsMacro(CouchbaseConstants.SCAN_CONSISTENCY)) {
       if (Strings.isNullOrEmpty(consistency)) {
         collector.addFailure("Scan consistency must be specified", null)
@@ -277,9 +273,11 @@ public class CouchbaseSourceConfig extends PluginConfig {
           .withConfigProperty(CouchbaseConstants.SCAN_CONSISTENCY);
       }
     }
-    if (!containsMacro(CouchbaseConstants.QUERY_TIMEOUT) && timeout == null) {
-      collector.addFailure("Query timeout must be specified", null)
-        .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
+    if (!containsMacro(CouchbaseConstants.QUERY_TIMEOUT)) {
+      if (timeout < 1) {
+        collector.addFailure("Query timeout must be greater than 0", null)
+          .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
+      }
     }
     // TODO Couchbase Server 4.5 introduces INFER, a N1QL statement that infers the metadata of documents.
     // This can be used to infer the Output Schema.

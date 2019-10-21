@@ -31,9 +31,9 @@ public class CouchbaseSourceConfigBuilder {
   protected String password;
   protected String onError;
   protected String schema;
-  protected Integer maxParallelism;
+  protected int maxParallelism;
   protected String scanConsistency;
-  protected Integer timeout;
+  protected int timeout;
 
   public static CouchbaseSourceConfigBuilder builder() {
     return new CouchbaseSourceConfigBuilder();
@@ -95,7 +95,7 @@ public class CouchbaseSourceConfigBuilder {
     return this;
   }
 
-  public CouchbaseSourceConfigBuilder setMaxParallelism(Integer maxParallelism) {
+  public CouchbaseSourceConfigBuilder setMaxParallelism(int maxParallelism) {
     this.maxParallelism = maxParallelism;
     return this;
   }
@@ -105,7 +105,7 @@ public class CouchbaseSourceConfigBuilder {
     return this;
   }
 
-  public CouchbaseSourceConfigBuilder setQueryTimeout(Integer timeout) {
+  public CouchbaseSourceConfigBuilder setQueryTimeout(int timeout) {
     this.timeout = timeout;
     return this;
   }
