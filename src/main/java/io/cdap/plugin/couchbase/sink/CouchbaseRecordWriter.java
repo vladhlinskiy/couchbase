@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.cdap.plugin.couchbase.CouchbaseSinkConfig;
+import io.cdap.plugin.couchbase.OperationType;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -30,6 +31,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Func1;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +45,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
   private static final Logger LOG = LoggerFactory.getLogger(CouchbaseRecordWriter.class);
   private static final Gson gson = new GsonBuilder().create();
 
+  private final Func1<JsonDocument, Observable<JsonDocument>> operation;
   private final Bucket bucket;
   private final int batchSize;
   private List<JsonDocument> batch;
@@ -61,6 +64,10 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
     this.batchSize = config.getBatchSize();
     this.batch = new ArrayList<>();
     this.totalCount = 0;
+    OperationType operationType = config.getOperationType();
+    this.operation = operationType == OperationType.INSERT ? docToInsert -> bucket.async().insert(docToInsert)
+      : operationType == OperationType.REPLACE ? docToInsert -> bucket.async().replace(docToInsert)
+      : docToInsert -> bucket.async().upsert(docToInsert);
   }
 
   @Override
@@ -86,7 +93,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
       // Insert documents in one batch, waiting until the last one is done.
       Observable
         .from(batch)
-        .flatMap(docToInsert -> bucket.async().insert(docToInsert))
+        .flatMap(operation)
         .last()
         .toBlocking()
         .last();
