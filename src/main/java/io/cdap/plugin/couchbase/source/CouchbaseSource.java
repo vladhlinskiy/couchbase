@@ -168,21 +168,16 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     N1qlQueryRow row = result.rows().next();
     String json = row.toString();
     // Deserialize the output in the JSON Schema draft v4 format as JsonArray
-    JsonArray schemaDraft = JsonArray.fromJson(json);
-    // The output is an array of single schema document
+    // The output is an array of schema documents, each of them groups properties for docs with similar structure
     // See: https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/infer.html#example
-    JsonObject couchbaseSchema = schemaDraft.getObject(0);
-    return recordSchema("parent", couchbaseSchema, config.getSelectFieldsList());
-  }
+    JsonArray couchbaseSchema = JsonArray.fromJson(json);
 
-  private Schema recordSchema(String recordName, JsonObject recordMetadata, @Nullable List<String> selectFields) {
-    JsonObject couchbasePropertiesMetadata = recordMetadata.getObject("properties");
     List<Schema.Field> fields = new ArrayList<>();
     // Select fields may contain metadata fields such as meta(`travel-sample`).id
     // Include them to the inferred schema as well using simple names after dot character
     // All metadata fields are strings
-    if (selectFields != null) {
-      List<Schema.Field> metadataFields = selectFields.stream()
+    if (config.getSelectFieldsList() != null) {
+      List<Schema.Field> metadataFields = config.getSelectFieldsList().stream()
         .filter(f -> f.startsWith("meta"))
         .map(f -> f.substring(f.lastIndexOf(".") + 1))
         .map(simpleName -> Schema.Field.of(simpleName, Schema.of(Schema.Type.STRING)))
@@ -190,6 +185,24 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
       fields.addAll(metadataFields);
     }
 
+    for (int i = 0; i < couchbaseSchema.size(); i++) {
+      JsonObject schema = couchbaseSchema.getObject(i);
+      List<Schema.Field> schemaFields = recordSchema(schema, config.getSelectFieldsList());
+
+      // Schemas ordered by number of sample documents.
+      // Use inferred type that matches most of the documents
+      schemaFields.stream()
+        .filter(f -> !fields.contains(f))
+        .forEach(fields::add);
+    }
+
+    return Schema.recordOf("inferred-schema", fields);
+  }
+
+  private List<Schema.Field> recordSchema(JsonObject recordMetadata, @Nullable List<String> selectFields) {
+    JsonObject couchbasePropertiesMetadata = recordMetadata.getObject("properties");
+
+    List<Schema.Field> fields = new ArrayList<>();
     for (String propertyName : couchbasePropertiesMetadata.getNames()) {
       if (selectFields != null && !selectFields.contains(propertyName) && !selectFields.contains("*")) {
         // include only selected fields
@@ -200,7 +213,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
       fields.add(Schema.Field.of(propertyName, propertySchema));
     }
 
-    return Schema.recordOf(recordName + "-schema", fields);
+    return fields;
   }
 
   private Schema propertySchema(String propertyName, JsonObject propertyMetadata) {
@@ -217,8 +230,8 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
         Schema componentSchema = propertySchema(propertyName, componentMetadata);
         return Schema.nullableOf(Schema.arrayOf(componentSchema));
       case "object":
-        Schema objectSchema = recordSchema(propertyName, propertyMetadata, null);
-        return Schema.nullableOf(objectSchema);
+        List<Schema.Field> objectFields = recordSchema(propertyMetadata, null);
+        return Schema.nullableOf(Schema.recordOf(propertyName + "-inferred-nested", objectFields));
       default:
         // this should never happen
         throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", propertyName,
