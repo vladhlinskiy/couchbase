@@ -29,7 +29,6 @@ import java.math.MathContext;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -141,14 +140,21 @@ public class JsonObjectToRecordTransformer {
 
   private StructuredRecord extractRecord(@Nullable String fieldName, JsonObject object, Schema schema) {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-    List<Schema.Field> fields = Objects.requireNonNull(schema.getFields(), "Schema fields cannot be empty");
-    for (Schema.Field field : fields) {
+    for (String propertyName : object.getNames()) {
+      // TODO move to utils
+      // Replaces any character that are not one of [A-Z][a-z][0-9] or _ with an underscore (_).
+      String validPropertyName = propertyName.toLowerCase().replaceAll("[^A-Za-z0-9]", "_");
+      Schema.Field field = schema.getField(validPropertyName);
+      if (field == null) {
+        continue;
+      }
+
       // Use full field name for nested records to construct meaningful errors messages.
       // Full field names will be in the following format: 'record_field_name.nested_record_field_name'
       String fullFieldName = fieldName != null ? String.format("%s.%s", fieldName, field.getName()) : field.getName();
       Schema nonNullableSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable()
         : field.getSchema();
-      Object value = extractValue(fullFieldName, object.get(field.getName()), nonNullableSchema);
+      Object value = extractValue(fullFieldName, object.get(propertyName), nonNullableSchema);
       builder.set(field.getName(), value);
     }
     return builder.build();
