@@ -385,6 +385,7 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       .put(CouchbaseConstants.SCHEMA, schema != null ? schema.toString() : "")
       .put(CouchbaseConstants.SELECT_FIELDS, selectFields)
       .put(CouchbaseConstants.CONDITIONS, conditions != null ? conditions : "")
+      .put(CouchbaseConstants.SAMPLE_SIZE, "1000")
       .put(CouchbaseConstants.MAX_PARALLELISM, "0")
       .put(CouchbaseConstants.SCAN_CONSISTENCY, Consistency.NOT_BOUNDED.getDisplayName())
       .put(CouchbaseConstants.QUERY_TIMEOUT, "600")

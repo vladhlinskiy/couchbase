@@ -143,8 +143,10 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
       cluster.authenticate(config.getUser(), config.getPassword());
     }
-    Bucket bucket = cluster.openBucket(config.getBucket());
-    N1qlQuery query = N1qlQuery.simple(String.format("INFER `%s`", config.getBucket()));
+    String bucketName = config.getBucket();
+    Bucket bucket = cluster.openBucket(bucketName);
+    String inferStatement = String.format("INFER `%s` WITH {\"sample_size\":%d};", bucketName, config.getSampleSize());
+    N1qlQuery query = N1qlQuery.simple(inferStatement);
     N1qlQueryResult result = bucket.query(query);
     if (!result.finalSuccess()) {
       String errorMessage = result.errors().stream()

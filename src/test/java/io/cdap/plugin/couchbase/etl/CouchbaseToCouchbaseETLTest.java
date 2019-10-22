@@ -167,6 +167,7 @@ public class CouchbaseToCouchbaseETLTest extends BaseCouchbaseETLTest {
         .put(CouchbaseConstants.SCHEMA, SCHEMA.toString())
         .put(CouchbaseConstants.SELECT_FIELDS, String.format("meta(`%s`).id, *", sourceBucketName))
         .put(CouchbaseConstants.CONDITIONS, "")
+        .put(CouchbaseConstants.SAMPLE_SIZE, "1000")
         .put(CouchbaseConstants.MAX_PARALLELISM, "0")
         .put(CouchbaseConstants.SCAN_CONSISTENCY, Consistency.NOT_BOUNDED.getDisplayName())
         .put(CouchbaseConstants.QUERY_TIMEOUT, "600")

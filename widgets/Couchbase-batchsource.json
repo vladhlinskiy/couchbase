@@ -85,6 +85,14 @@
       "properties": [
         {
           "widget-type": "number",
+          "label": "Sample Size",
+          "name": "sampleSize",
+          "widget-attributes": {
+            "default": "1000"
+          }
+        },
+        {
+          "widget-type": "number",
           "label": "Max Parallelism",
           "name": "maxParallelism",
           "widget-attributes": {

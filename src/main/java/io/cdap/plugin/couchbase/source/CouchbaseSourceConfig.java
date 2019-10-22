@@ -73,6 +73,12 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   @Description("Schema of records output by the source.")
   private String schema;
 
+  @Name(CouchbaseConstants.SAMPLE_SIZE)
+  @Description("Configuration property name used to specify the number of documents to randomly sample in the " +
+    "bucket when inferring the schema. The default sample size is 1000 documents. If a bucket contains fewer " +
+    "documents than the specified number, then all the documents in the bucket will be used.")
+  private int sampleSize;
+
   @Name(CouchbaseConstants.MAX_PARALLELISM)
   @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less " +
     "than zero or greater than the total number of cores in a cluster, the system will use all available cores in " +
@@ -88,13 +94,14 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   private int timeout;
 
   public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String user, String password,
-                               String selectFields, String conditions, String onError, String schema,
+                               String selectFields, String conditions, String onError, String schema, int sampleSize,
                                int maxParallelism, String consistency, int timeout) {
     super(referenceName, nodes, bucket, user, password);
     this.selectFields = selectFields;
     this.conditions = conditions;
     this.onError = onError;
     this.schema = schema;
+    this.sampleSize = sampleSize;
     this.maxParallelism = maxParallelism;
     this.consistency = consistency;
     this.timeout = timeout;
@@ -115,6 +122,10 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
 
   public String getSchema() {
     return schema;
+  }
+
+  public int getSampleSize() {
+    return sampleSize;
   }
 
   public int getMaxParallelism() {
@@ -198,7 +209,12 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
           .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
       }
     }
-
+    if (!containsMacro(CouchbaseConstants.SAMPLE_SIZE)) {
+      if (sampleSize < 1) {
+        collector.addFailure("Sample size must be greater than 0", null)
+          .withConfigProperty(CouchbaseConstants.SAMPLE_SIZE);
+      }
+    }
     if (!containsMacro(CouchbaseConstants.SCHEMA) && !Strings.isNullOrEmpty(schema)) {
       Schema parsedSchema = getParsedSchema();
       validateSchema(parsedSchema, collector);
