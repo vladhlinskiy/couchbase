@@ -50,6 +50,7 @@ public class CouchbaseSourceConfigTest extends CouchbaseConfigTest {
     .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
     .setSchema(VALID_SCHEMA.toString())
     .setScanConsistency(Consistency.NOT_BOUNDED.getDisplayName())
+    .setSampleSize(1000)
     .setMaxParallelism(0)
     .setQueryTimeout(600)
     .build();
@@ -175,25 +176,25 @@ public class CouchbaseSourceConfigTest extends CouchbaseConfigTest {
   }
 
   @Test
-  public void testValidateSchemaNull() {
+  public void testValidateSampleSizeZero() {
     CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setSchema(null)
+      .setSampleSize(0)
       .build();
 
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.SCHEMA);
+    assertValidationFailed(failureCollector, CouchbaseConstants.SAMPLE_SIZE);
   }
 
   @Test
-  public void testValidateSchemaEmpty() {
+  public void testValidateSampleSizeInvalid() {
     CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setSchema("")
+      .setSampleSize(-100)
       .build();
 
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.SCHEMA);
+    assertValidationFailed(failureCollector, CouchbaseConstants.SAMPLE_SIZE);
   }
 
   @Test

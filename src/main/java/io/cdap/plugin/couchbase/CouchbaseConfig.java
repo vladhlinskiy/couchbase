@@ -232,9 +232,9 @@ public class CouchbaseConfig extends PluginConfig {
     for (Schema.Field field : providedSchema.getFields()) {
       Schema.Field inferredField = inferredSchema.getField(field.getName());
       if (inferredField == null) {
-        String errorMessage = String.format("Field '%s' does not exist in Couchbase", field.getName());
-        collector.addFailure(errorMessage, String.format("Remove field '%s' from the output schema", field.getName()))
-          .withOutputSchemaField(field.getName(), null);
+        // Inferred schema may miss some fields, depending on the specified 'Sample Size'
+        // See: https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/infer.html
+        continue;
       }
       Schema inferredFieldSchema = inferredField.getSchema();
       Schema providedFieldSchema = field.getSchema();

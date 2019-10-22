@@ -107,4 +107,11 @@ public class CouchbaseConstants {
    * data stored per write. Commits of 1 MiB usually provide the best performance. Default value is 100 records.
    */
   public static final String BATCH_SIZE = "batchSize";
+
+  /**
+   * Configuration property name used to specify the number of documents to randomly sample in the bucket when
+   * inferring the schema. The default sample size is 1000 documents. If a bucket contains fewer documents than the
+   * specified number, then all the documents in the bucket will be used.
+   */
+  public static final String SAMPLE_SIZE = "sampleSize";
 }
