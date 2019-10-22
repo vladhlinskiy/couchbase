@@ -210,7 +210,10 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
       }
       JsonObject propertyMetadata = couchbasePropertiesMetadata.getObject(propertyName);
       Schema propertySchema = propertySchema(propertyName, propertyMetadata);
-      fields.add(Schema.Field.of(propertyName, propertySchema));
+      // TODO move to utils
+      // Replaces any character that are not one of [A-Z][a-z][0-9] or _ with an underscore (_).
+      String fieldName = propertyName.toLowerCase().replaceAll("[^A-Za-z0-9]", "_");
+      fields.add(Schema.Field.of(fieldName, propertySchema));
     }
 
     return fields;
