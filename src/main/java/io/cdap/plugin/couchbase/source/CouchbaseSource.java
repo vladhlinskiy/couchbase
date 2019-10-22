@@ -151,8 +151,10 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
       cluster.authenticate(config.getUser(), config.getPassword());
     }
-    Bucket bucket = cluster.openBucket(config.getBucket());
-    N1qlQuery query = N1qlQuery.simple(String.format("INFER `%s`", config.getBucket()));
+    String bucketName = config.getBucket();
+    Bucket bucket = cluster.openBucket(bucketName);
+    String inferStatement = String.format("INFER `%s` WITH {\"sample_size\":%d};", bucketName, config.getSampleSize());
+    N1qlQuery query = N1qlQuery.simple(inferStatement);
     N1qlQueryResult result = bucket.query(query);
     if (!result.finalSuccess()) {
       String errorMessage = result.errors().stream()
@@ -261,6 +263,12 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     @Description("Schema of records output by the source.")
     private String schema;
 
+    @Name(CouchbaseConstants.SAMPLE_SIZE)
+    @Description("Configuration property name used to specify the number of documents to randomly sample in the " +
+      "bucket when inferring the schema. The default sample size is 1000 documents. If a bucket contains fewer " +
+      "documents than the specified number, then all the documents in the bucket will be used.")
+    private int sampleSize;
+
     @Name(CouchbaseConstants.MAX_PARALLELISM)
     @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less " +
       "than zero or greater than the total number of cores in a cluster, the system will use all available cores in " +
@@ -276,13 +284,14 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     private int timeout;
 
     public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String user, String password,
-                                 String selectFields, String conditions, String onError, String schema,
+                                 String selectFields, String conditions, String onError, String schema, int sampleSize,
                                  int maxParallelism, String consistency, int timeout) {
       super(referenceName, nodes, bucket, user, password);
       this.selectFields = selectFields;
       this.conditions = conditions;
       this.onError = onError;
       this.schema = schema;
+      this.sampleSize = sampleSize;
       this.maxParallelism = maxParallelism;
       this.consistency = consistency;
       this.timeout = timeout;
@@ -303,6 +312,10 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
 
     public String getSchema() {
       return schema;
+    }
+
+    public int getSampleSize() {
+      return sampleSize;
     }
 
     public int getMaxParallelism() {
@@ -384,6 +397,12 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
         if (timeout < 1) {
           collector.addFailure("Query timeout must be greater than 0", null)
             .withConfigProperty(CouchbaseConstants.QUERY_TIMEOUT);
+        }
+      }
+      if (!containsMacro(CouchbaseConstants.SAMPLE_SIZE)) {
+        if (sampleSize < 1) {
+          collector.addFailure("Sample size must be greater than 0", null)
+            .withConfigProperty(CouchbaseConstants.SAMPLE_SIZE);
         }
       }
       if (!containsMacro(CouchbaseConstants.SCHEMA) && !Strings.isNullOrEmpty(schema)) {

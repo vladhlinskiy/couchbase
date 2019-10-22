@@ -27,6 +27,7 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
   private String selectFields;
   private String onError;
   private String schema;
+  private int sampleSize;
   private int maxParallelism;
   private String scanConsistency;
   private int timeout;
@@ -48,6 +49,7 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
       .setUser(original.getUser())
       .setPassword(original.getPassword())
       .setOnError(original.getOnError())
+      .setSampleSize(original.getSampleSize())
       .setMaxParallelism(original.getMaxParallelism())
       .setScanConsistency(original.getConsistency())
       .setQueryTimeout(original.getTimeout())
@@ -66,6 +68,11 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
 
   public CouchbaseSourceConfigBuilder setOnError(String onError) {
     this.onError = onError;
+    return this;
+  }
+
+  public CouchbaseSourceConfigBuilder setSampleSize(int sampleSize) {
+    this.sampleSize = sampleSize;
     return this;
   }
 
@@ -91,7 +98,7 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
 
   public CouchbaseSource.CouchbaseSourceConfig build() {
     return new CouchbaseSource.CouchbaseSourceConfig(referenceName, nodes, bucket, user, password, selectFields,
-                                                     conditions, onError, schema, maxParallelism, scanConsistency,
-                                                     timeout);
+                                                     conditions, onError, schema, sampleSize, maxParallelism,
+                                                     scanConsistency, timeout);
   }
 }

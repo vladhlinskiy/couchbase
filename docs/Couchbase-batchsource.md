@@ -31,6 +31,10 @@ https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/selectint
 
 **Output Schema:** Specifies the schema of the documents.
 
+**Sample Size:** Specifies the number of documents to randomly sample in the bucket when inferring the schema. 
+The default sample size is 1000 documents. If a bucket contains fewer documents than the specified number, then all 
+the documents in the bucket will be used.
+
 **Max Parallelism:** Maximum number of CPU cores can be used to process a query. If the specified value is less than
 zero or greater than the total number of cores in a cluster, the system will use all available cores in the cluster.
 For more information, see [Parallelism Parameter].
