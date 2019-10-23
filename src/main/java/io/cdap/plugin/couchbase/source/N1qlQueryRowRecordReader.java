@@ -22,9 +22,7 @@ import com.couchbase.client.java.document.json.JsonObject;
 import com.couchbase.client.java.query.N1qlQuery;
 import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.N1qlQueryRow;
-import com.couchbase.client.java.query.Select;
-import com.couchbase.client.java.query.Statement;
-import com.couchbase.client.java.query.dsl.Expression;
+import com.couchbase.client.java.query.consistency.ScanConsistency;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -51,6 +49,10 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
 
   private Cluster cluster;
   private Bucket bucket;
+  private Query query;
+  private ScanConsistency scanConsistency;
+  private int maxParallelism;
+  private int timeout;
   private Iterator<N1qlQueryRow> iterator;
   private N1qlQueryRow value;
 
@@ -71,16 +73,25 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
       cluster.authenticate(config.getUser(), config.getPassword());
     }
     this.bucket = cluster.openBucket(config.getBucket());
+    CouchbaseSplit split = (CouchbaseSplit) inputSplit;
+    this.query = split.getQuery();
+    this.scanConsistency = config.getScanConsistency().getScanConsistency();
+    this.maxParallelism = config.getMaxParallelism();
+    this.timeout = config.getTimeout();
 
-    Statement statement = Strings.isNullOrEmpty(config.getConditions())
-      ? Select.select(config.getSelectFields()).from(Expression.i(config.getBucket()))
-      : Select.select(config.getSelectFields()).from(Expression.i(config.getBucket())).where(config.getConditions());
-    LOG.trace("Executing query split: {}", statement);
+    // read the first chunk
+    readChunk();
+  }
 
-    N1qlQuery query = N1qlQuery.simple(statement);
-    query.params().consistency(config.getScanConsistency().getScanConsistency())
-      .maxParallelism(config.getMaxParallelism())
-      .serverSideTimeout(config.getTimeout(), TimeUnit.SECONDS);
+  private void readChunk() {
+    if (!query.hasNext()) {
+      return;
+    }
+    N1qlQuery query = this.query.getNextN1qlQuery();
+    query.params()
+      .consistency(scanConsistency)
+      .maxParallelism(maxParallelism)
+      .serverSideTimeout(timeout, TimeUnit.SECONDS);
 
     N1qlQueryResult result = bucket.query(query);
     if (!result.finalSuccess()) {
@@ -95,6 +106,10 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
 
   @Override
   public boolean nextKeyValue() {
+    if (!iterator.hasNext()) {
+      // read next chunk to re-init the iterator
+      readChunk();
+    }
     if (!iterator.hasNext()) {
       return false;
     }
