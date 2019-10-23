@@ -55,6 +55,7 @@ public class CouchbaseSourceConfigTest {
     .setSelectFields("meta(`travel-sample`).id, *")
     .setUser("Administrator")
     .setPassword("password")
+    .setNumSplits(1)
     .setOnError(ErrorHandling.FAIL_PIPELINE.getDisplayName())
     .setSchema(VALID_SCHEMA.toString())
     .setScanConsistency(Consistency.NOT_BOUNDED.getDisplayName())
@@ -282,6 +283,17 @@ public class CouchbaseSourceConfigTest {
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
     assertValidationFailed(failureCollector, CouchbaseConstants.SAMPLE_SIZE);
+  }
+
+  @Test
+  public void testValidateNumSplitsInvalid() {
+    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
+      .setNumSplits(-100)
+      .build();
+
+    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
+    config.validate(failureCollector);
+    assertValidationFailed(failureCollector, CouchbaseConstants.NUM_SPLITS);
   }
 
   @Test

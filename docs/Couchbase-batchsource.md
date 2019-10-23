@@ -25,6 +25,10 @@ https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/where.htm
 [N1QL SELECT statement]:
 https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/selectintro.html
 
+**Number of Splits:** Desired number of splits to divide the query into when reading from Couchbase.
+Fewer splits may be created if the query cannot be divided into the desired number of splits. If the specified value is
+zero, the plugin will use the number of map tasks as the number of splits.
+
 **Username:** User identity for connecting to the Couchbase.
 
 **Password:** Password to use to connect to the Couchbase.

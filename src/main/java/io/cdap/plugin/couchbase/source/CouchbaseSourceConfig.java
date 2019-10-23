@@ -63,6 +63,12 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   @Nullable
   private String conditions;
 
+  @Name(CouchbaseConstants.NUM_SPLITS)
+  @Description("Desired number of splits to divide the query into when reading from Couchbase. Fewer splits may be " +
+    "created if the query cannot be divided into the desired number of splits. If the specified value is zero, the " +
+    "plugin will use the number of map tasks as the number of splits.")
+  private int numSplits;
+
   @Name(CouchbaseConstants.ON_ERROR)
   @Description("Specifies how to handle error in record processing. Error will be thrown if failed to parse value " +
     "according to provided schema.")
@@ -94,11 +100,12 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   private int timeout;
 
   public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String user, String password,
-                               String selectFields, String conditions, String onError, String schema, int sampleSize,
-                               int maxParallelism, String consistency, int timeout) {
+                               String selectFields, String conditions, int numSplits, String onError, String schema,
+                               int sampleSize, int maxParallelism, String consistency, int timeout) {
     super(referenceName, nodes, bucket, user, password);
     this.selectFields = selectFields;
     this.conditions = conditions;
+    this.numSplits = numSplits;
     this.onError = onError;
     this.schema = schema;
     this.sampleSize = sampleSize;
@@ -114,6 +121,10 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   @Nullable
   public String getConditions() {
     return conditions;
+  }
+
+  public int getNumSplits() {
+    return numSplits;
   }
 
   public String getOnError() {
@@ -183,6 +194,12 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
     if (!containsMacro(CouchbaseConstants.SELECT_FIELDS) && Strings.isNullOrEmpty(selectFields)) {
       collector.addFailure("Select fields must be specified", null)
         .withConfigProperty(CouchbaseConstants.SELECT_FIELDS);
+    }
+    if (!containsMacro(CouchbaseConstants.NUM_SPLITS)) {
+      if (numSplits < 0) {
+        collector.addFailure("Number of splits must be greater than or equal to 0", null)
+          .withConfigProperty(CouchbaseConstants.NUM_SPLITS);
+      }
     }
     if (!containsMacro(CouchbaseConstants.ON_ERROR)) {
       if (Strings.isNullOrEmpty(onError)) {

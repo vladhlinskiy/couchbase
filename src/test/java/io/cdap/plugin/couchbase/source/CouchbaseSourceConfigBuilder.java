@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<CouchbaseSourceConfigBuilder> {
 
   private String selectFields;
+  private int numSplits;
   private String onError;
   private String schema;
   private int sampleSize;
@@ -46,6 +47,7 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
       .setBucket(original.getBucket())
       .setSelectFields(original.getSelectFields())
       .setConditions(original.getConditions())
+      .setNumSplits(original.getNumSplits())
       .setUser(original.getUser())
       .setPassword(original.getPassword())
       .setOnError(original.getOnError())
@@ -63,6 +65,11 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
 
   public CouchbaseSourceConfigBuilder setConditions(@Nullable String conditions) {
     this.conditions = conditions;
+    return this;
+  }
+
+  public CouchbaseSourceConfigBuilder setNumSplits(int numSplits) {
+    this.numSplits = numSplits;
     return this;
   }
 
@@ -98,6 +105,6 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
 
   public CouchbaseSourceConfig build() {
     return new CouchbaseSourceConfig(referenceName, nodes, bucket, user, password, selectFields, conditions,
-                                     onError, schema, sampleSize, maxParallelism, scanConsistency, timeout);
+                                     numSplits, onError, schema, sampleSize, maxParallelism, scanConsistency, timeout);
   }
 }

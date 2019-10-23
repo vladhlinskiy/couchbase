@@ -114,4 +114,11 @@ public class CouchbaseConstants {
    * specified number, then all the documents in the bucket will be used.
    */
   public static final String SAMPLE_SIZE = "sampleSize";
+
+  /**
+   * Configuration property name used to specify the desired number of splits to divide the query into when reading
+   * from Couchbase. Fewer splits may be created if the query cannot be divided into the desired number of splits. If
+   * the specified value is zero, the plugin will use the number of map tasks as the number of splits.
+   */
+  public static final String NUM_SPLITS = "numSplits";
 }
