@@ -26,13 +26,13 @@ import java.util.Map;
 /**
  * InputFormatProvider used by cdap to provide configurations to mapreduce job
  */
-public class N1qlQueryRowInputFormatProvider implements InputFormatProvider {
+public class JsonObjectInputFormatProvider implements InputFormatProvider {
   public static final String PROPERTY_CONFIG_JSON = "cdap.couchbase.config";
   private static final Gson gson = new GsonBuilder().create();
 
   private final Map<String, String> conf;
 
-  public N1qlQueryRowInputFormatProvider(CouchbaseSourceConfig config) {
+  public JsonObjectInputFormatProvider(CouchbaseSourceConfig config) {
     this.conf = new ImmutableMap.Builder<String, String>()
       .put(PROPERTY_CONFIG_JSON, gson.toJson(config))
       .build();
@@ -40,7 +40,7 @@ public class N1qlQueryRowInputFormatProvider implements InputFormatProvider {
 
   @Override
   public String getInputFormatClassName() {
-    return N1qlQueryRowInputFormat.class.getName();
+    return JsonObjectRowInputFormat.class.getName();
   }
 
   @Override

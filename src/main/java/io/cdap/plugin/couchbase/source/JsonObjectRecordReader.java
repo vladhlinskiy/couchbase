@@ -19,10 +19,8 @@ import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.query.AsyncN1qlQueryRow;
 import com.couchbase.client.java.query.N1qlQuery;
-import com.couchbase.client.java.query.N1qlQueryResult;
-import com.couchbase.client.java.query.N1qlQueryRow;
-import com.couchbase.client.java.query.consistency.ScanConsistency;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,27 +32,23 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Observable;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * RecordReader implementation, which reads N1qlQueryRow entries.
  */
-public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQueryRow> {
-  private static final Logger LOG = LoggerFactory.getLogger(N1qlQueryRowRecordReader.class);
+public class JsonObjectRecordReader extends RecordReader<NullWritable, JsonObject> {
+  private static final Logger LOG = LoggerFactory.getLogger(JsonObjectRecordReader.class);
   private static final Gson gson = new GsonBuilder().create();
 
   private Cluster cluster;
   private Bucket bucket;
-  private Query query;
-  private ScanConsistency scanConsistency;
-  private int maxParallelism;
-  private int timeout;
-  private Iterator<N1qlQueryRow> iterator;
-  private N1qlQueryRow value;
+  private Iterator<AsyncN1qlQueryRow> iterator;
+  private JsonObject value;
 
   /**
    * Initialize an iterator and config.
@@ -65,7 +59,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   @Override
   public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
     Configuration conf = taskAttemptContext.getConfiguration();
-    String confJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
+    String confJson = conf.get(JsonObjectInputFormatProvider.PROPERTY_CONFIG_JSON);
     CouchbaseSourceConfig config = gson.fromJson(confJson, CouchbaseSourceConfig.class);
 
     this.cluster = CouchbaseCluster.create(config.getNodeList());
@@ -74,46 +68,38 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
     }
     this.bucket = cluster.openBucket(config.getBucket());
     CouchbaseSplit split = (CouchbaseSplit) inputSplit;
-    this.query = split.getQuery();
-    this.scanConsistency = config.getScanConsistency().getScanConsistency();
-    this.maxParallelism = config.getMaxParallelism();
-    this.timeout = config.getTimeout();
 
-    // read the first chunk
-    readChunk();
+    N1qlQuery query = split.getQuery().getN1qlQuery();
+    query.params()
+      .consistency(config.getScanConsistency().getScanConsistency())
+      .maxParallelism(config.getMaxParallelism())
+      .serverSideTimeout(config.getTimeout(), TimeUnit.SECONDS);
+
+    this.iterator = query(query).toBlocking().toIterable().iterator();
   }
 
-  private void readChunk() {
-    if (!query.hasNext()) {
-      return;
-    }
-    N1qlQuery query = this.query.getNextN1qlQuery();
-    query.params()
-      .consistency(scanConsistency)
-      .maxParallelism(maxParallelism)
-      .serverSideTimeout(timeout, TimeUnit.SECONDS);
-
-    N1qlQueryResult result = bucket.query(query);
-    if (!result.finalSuccess()) {
-      String errorMessage = result.errors().stream()
-        .map(JsonObject::toString)
-        .collect(Collectors.joining("\n"));
-      throw new CouchbaseExecutionException(errorMessage);
-    }
-
-    this.iterator = result.rows();
+  /**
+   * For a long-running N1QL query, we need a way of streaming the rows and correctly handling errors.
+   */
+  public Observable<AsyncN1qlQueryRow> query(N1qlQuery query) {
+    return bucket.async()
+      .query(query).flatMap(result -> Observable
+        .merge(result.rows(), result.errors())
+        .map(rowOrError -> {
+          if (rowOrError instanceof AsyncN1qlQueryRow) {
+            return (AsyncN1qlQueryRow) rowOrError;
+          } else {
+            throw new CouchbaseExecutionException(rowOrError.toString());
+          }
+        }));
   }
 
   @Override
   public boolean nextKeyValue() {
     if (!iterator.hasNext()) {
-      // read next chunk to re-init the iterator
-      readChunk();
-    }
-    if (!iterator.hasNext()) {
       return false;
     }
-    value = iterator.next();
+    value = iterator.next().value();
     return true;
   }
 
@@ -123,7 +109,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   }
 
   @Override
-  public N1qlQueryRow getCurrentValue() {
+  public JsonObject getCurrentValue() {
     return value;
   }
 

@@ -28,7 +28,7 @@ import java.io.ObjectOutputStream;
 
 /**
  * Couchbase input split. Performs serialization and deserialization of the {@link Query}
- * received from {@link N1qlQueryRowInputFormat}.
+ * received from {@link JsonObjectRowInputFormat}.
  */
 public class CouchbaseSplit extends InputSplit implements Writable {
 
