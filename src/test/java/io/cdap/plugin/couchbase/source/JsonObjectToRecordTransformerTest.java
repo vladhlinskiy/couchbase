@@ -42,7 +42,7 @@ public class JsonObjectToRecordTransformerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private static CouchbaseSource.CouchbaseSourceConfig config;
+  private static CouchbaseSourceConfig config;
 
   @BeforeClass
   public static void setupTestClass() throws Exception {
@@ -189,7 +189,7 @@ public class JsonObjectToRecordTransformerTest {
       .put("nested_object", nestedJsonObject)
       .put("object_to_map", mapObject);
 
-    CouchbaseSource.CouchbaseSourceConfig wildCardQueryConfig = CouchbaseSourceConfigBuilder.builder(config)
+    CouchbaseSourceConfig wildCardQueryConfig = CouchbaseSourceConfigBuilder.builder(config)
       .setBucket("bucket-name")
       .setSelectFields("meta(`bucket-name`).id, *")
       .build();

@@ -24,7 +24,6 @@ import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.etl.api.validation.InvalidStageException;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -170,14 +169,14 @@ public class RecordToJsonDocumentTransformer {
   /**
    * Get UTC zoned date and time represented by the specified timestamp in microseconds.
    *
-   * @param ts timestamp in microseconds
+   * @param micros timestamp in microseconds
    * @return UTC {@link ZonedDateTime} corresponding to the specified timestamp
    */
-  private ZonedDateTime extractUTCDateTime(long ts) {
+  private ZonedDateTime extractUTCDateTime(long micros) {
     ZoneId zoneId = ZoneId.ofOffset("UTC", ZoneOffset.UTC);
     long mod = TimeUnit.MICROSECONDS.convert(1, TimeUnit.SECONDS);
-    int fraction = (int) (ts % mod);
-    long tsInSeconds = TimeUnit.MICROSECONDS.toSeconds(ts);
+    int fraction = (int) (micros % mod);
+    long tsInSeconds = TimeUnit.MICROSECONDS.toSeconds(micros);
     // create an Instant with time in seconds and fraction which will be stored as nano seconds.
     Instant instant = Instant.ofEpochSecond(tsInSeconds, TimeUnit.MICROSECONDS.toNanos(fraction));
     return ZonedDateTime.ofInstant(instant, zoneId);
@@ -231,12 +230,12 @@ public class RecordToJsonDocumentTransformer {
     for (Schema s : schema.getUnionSchemas()) {
       try {
         return extractValue(fieldName, value, s);
-      } catch (Exception e) {
+      } catch (ClassCastException e) {
         // expected if this schema is not the correct one for the value
       }
     }
     // Should never happen
-    throw new InvalidStageException(
+    throw new IllegalStateException(
       String.format("None of the union schemas '%s' of the field '%s' matches the value '%s'.",
                     schema.getUnionSchemas(), fieldName, value));
   }

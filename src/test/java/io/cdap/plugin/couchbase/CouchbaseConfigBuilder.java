@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 /**
  * Builder class that provides handy methods to construct {@link CouchbaseConfig} for testing.
  */
-public class CouchbaseConfigBuilder<T extends CouchbaseConfigBuilder> {
+public abstract class CouchbaseConfigBuilder<T extends CouchbaseConfigBuilder> {
 
   protected String referenceName;
   protected String nodes;
@@ -31,19 +31,6 @@ public class CouchbaseConfigBuilder<T extends CouchbaseConfigBuilder> {
 
   @Nullable
   protected String password;
-
-  public static CouchbaseConfigBuilder builder() {
-    return new CouchbaseConfigBuilder();
-  }
-
-  public static CouchbaseConfigBuilder builder(CouchbaseConfig original) {
-    return builder()
-      .setReferenceName(original.getReferenceName())
-      .setNodes(original.getNodes())
-      .setBucket(original.getBucket())
-      .setUser(original.getUser())
-      .setPassword(original.getPassword());
-  }
 
   public T setReferenceName(String referenceName) {
     this.referenceName = referenceName;
@@ -70,7 +57,5 @@ public class CouchbaseConfigBuilder<T extends CouchbaseConfigBuilder> {
     return (T) this;
   }
 
-  public CouchbaseConfig build() {
-    return new CouchbaseConfig(referenceName, nodes, bucket, user, password);
-  }
+  public abstract CouchbaseConfig build();
 }

@@ -39,10 +39,10 @@ import javax.annotation.Nullable;
  */
 public class JsonObjectToRecordTransformer {
 
-  private final CouchbaseSource.CouchbaseSourceConfig config;
+  private final CouchbaseSourceConfig config;
   private final Schema schema;
 
-  public JsonObjectToRecordTransformer(CouchbaseSource.CouchbaseSourceConfig config, Schema schema) {
+  public JsonObjectToRecordTransformer(CouchbaseSourceConfig config, Schema schema) {
     this.config = config;
     this.schema = schema;
   }

@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 /**
- * Tests of {@link CouchbaseSink.CouchbaseSinkConfig} methods.
+ * Tests of {@link CouchbaseSinkConfig} methods.
  */
 public class CouchbaseSinkConfigTest {
 
   private static final String MOCK_STAGE = "mockstage";
 
-  private static final CouchbaseSink.CouchbaseSinkConfig VALID_CONFIG = CouchbaseSinkConfigBuilder.builder()
+  private static final CouchbaseSinkConfig VALID_CONFIG = CouchbaseSinkConfigBuilder.builder()
     .setReferenceName("CouchbaseSource")
     .setNodes("localhost")
     .setBucket("travel-sample")
@@ -57,7 +57,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateReferenceNameNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setReferenceName(null)
       .build();
 
@@ -68,7 +68,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateReferenceNameEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setReferenceName("")
       .build();
 
@@ -79,7 +79,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateReferenceNameInvalid() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setReferenceName("**********")
       .build();
 
@@ -90,7 +90,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateNodesNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setNodes(null)
       .build();
 
@@ -101,7 +101,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateNodesEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setNodes("")
       .build();
 
@@ -112,7 +112,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateBucketNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setBucket(null)
       .build();
 
@@ -123,7 +123,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateBucketEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setBucket("")
       .build();
 
@@ -134,7 +134,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateOperationTypeNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setOperation(null)
       .build();
 
@@ -145,7 +145,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateOperationTypeEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setOperation("")
       .build();
 
@@ -156,7 +156,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateOperationTypeInvalid() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setOperation("unknown-operation-type")
       .build();
 
@@ -167,7 +167,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateBatchSizeZero() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setBatchSize(0)
       .build();
 
@@ -178,7 +178,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateBatchSizeInvalid() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setBatchSize(-1)
       .build();
 
@@ -189,7 +189,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateKeyFieldNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setKeyField(null)
       .build();
 
@@ -200,7 +200,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateKeyFieldEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setKeyField("")
       .build();
 
@@ -211,7 +211,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateUsernameNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setUser(null)
       .setPassword("username is null, but password specified")
       .build();
@@ -223,7 +223,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateUsernameEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setUser("")
       .setPassword("username is empty, but password specified")
       .build();
@@ -235,7 +235,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidatePasswordNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setUser("username specified, but password is null")
       .setPassword(null)
       .build();
@@ -247,7 +247,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidatePasswordEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setUser("username specified, but password is empty")
       .setPassword("")
       .build();
@@ -259,7 +259,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateUsernameAndPasswordNull() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setUser(null)
       .setPassword(null)
       .build();
@@ -271,7 +271,7 @@ public class CouchbaseSinkConfigTest {
 
   @Test
   public void testValidateUsernameAndPasswordEmpty() {
-    CouchbaseSink.CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
+    CouchbaseSinkConfig config = CouchbaseSinkConfigBuilder.builder(VALID_CONFIG)
       .setUser("")
       .setPassword("")
       .build();

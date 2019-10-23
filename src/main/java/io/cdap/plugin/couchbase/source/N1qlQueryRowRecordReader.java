@@ -64,7 +64,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
     Configuration conf = taskAttemptContext.getConfiguration();
     String confJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
-    CouchbaseSource.CouchbaseSourceConfig config = gson.fromJson(confJson, CouchbaseSource.CouchbaseSourceConfig.class);
+    CouchbaseSourceConfig config = gson.fromJson(confJson, CouchbaseSourceConfig.class);
 
     this.cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {

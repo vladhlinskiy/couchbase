@@ -31,7 +31,7 @@ public class CouchbaseOutputFormatProvider implements OutputFormatProvider {
   private static final Gson gson = new GsonBuilder().create();
   private final Map<String, String> conf;
 
-  public CouchbaseOutputFormatProvider(CouchbaseSink.CouchbaseSinkConfig config) {
+  public CouchbaseOutputFormatProvider(CouchbaseSinkConfig config) {
     this.conf = new ImmutableMap.Builder<String, String>()
       .put(PROPERTY_CONFIG_JSON, gson.toJson(config))
       .build();

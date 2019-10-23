@@ -45,6 +45,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
   private static final Gson gson = new GsonBuilder().create();
 
   private final Func1<JsonDocument, Observable<JsonDocument>> operation;
+  private final Cluster cluster;
   private final Bucket bucket;
   private final int batchSize;
   private List<JsonDocument> batch;
@@ -53,9 +54,9 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
   public CouchbaseRecordWriter(TaskAttemptContext taskAttemptContext) {
     Configuration conf = taskAttemptContext.getConfiguration();
     String configJson = conf.get(CouchbaseOutputFormatProvider.PROPERTY_CONFIG_JSON);
-    CouchbaseSink.CouchbaseSinkConfig config = gson.fromJson(configJson, CouchbaseSink.CouchbaseSinkConfig.class);
+    CouchbaseSinkConfig config = gson.fromJson(configJson, CouchbaseSinkConfig.class);
 
-    Cluster cluster = CouchbaseCluster.create(config.getNodeList());
+    this.cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
       cluster.authenticate(config.getUser(), config.getPassword());
     }
@@ -84,6 +85,7 @@ public class CouchbaseRecordWriter extends RecordWriter<NullWritable, JsonDocume
     flush();
     LOG.debug("Total number of values written to Couchbase: {}", totalCount);
     bucket.close();
+    cluster.disconnect();
   }
 
   private void flush() {

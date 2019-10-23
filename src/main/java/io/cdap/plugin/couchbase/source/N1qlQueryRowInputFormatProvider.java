@@ -32,7 +32,7 @@ public class N1qlQueryRowInputFormatProvider implements InputFormatProvider {
 
   private final Map<String, String> conf;
 
-  public N1qlQueryRowInputFormatProvider(CouchbaseSource.CouchbaseSourceConfig config) {
+  public N1qlQueryRowInputFormatProvider(CouchbaseSourceConfig config) {
     this.conf = new ImmutableMap.Builder<String, String>()
       .put(PROPERTY_CONFIG_JSON, gson.toJson(config))
       .build();

@@ -18,7 +18,7 @@ package io.cdap.plugin.couchbase.sink;
 import io.cdap.plugin.couchbase.CouchbaseConfigBuilder;
 
 /**
- * Builder class that provides handy methods to construct {@link CouchbaseSink.CouchbaseSinkConfig} for testing.
+ * Builder class that provides handy methods to construct {@link CouchbaseSinkConfig} for testing.
  */
 public class CouchbaseSinkConfigBuilder extends CouchbaseConfigBuilder<CouchbaseSinkConfigBuilder> {
 
@@ -30,7 +30,7 @@ public class CouchbaseSinkConfigBuilder extends CouchbaseConfigBuilder<Couchbase
     return new CouchbaseSinkConfigBuilder();
   }
 
-  public static CouchbaseSinkConfigBuilder builder(CouchbaseSink.CouchbaseSinkConfig original) {
+  public static CouchbaseSinkConfigBuilder builder(CouchbaseSinkConfig original) {
     return builder()
       .setReferenceName(original.getReferenceName())
       .setNodes(original.getNodes())
@@ -57,8 +57,8 @@ public class CouchbaseSinkConfigBuilder extends CouchbaseConfigBuilder<Couchbase
     return this;
   }
 
-  public CouchbaseSink.CouchbaseSinkConfig build() {
-    return new CouchbaseSink.CouchbaseSinkConfig(referenceName, nodes, bucket, user, password, keyField, operation,
-                                                 batchSize);
+  public CouchbaseSinkConfig build() {
+    return new CouchbaseSinkConfig(referenceName, nodes, bucket, user, password, keyField, operation,
+                                   batchSize);
   }
 }

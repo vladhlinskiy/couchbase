@@ -20,7 +20,7 @@ import io.cdap.plugin.couchbase.CouchbaseConfigBuilder;
 import javax.annotation.Nullable;
 
 /**
- * Builder class that provides handy methods to construct {@link CouchbaseSource.CouchbaseSourceConfig} for testing.
+ * Builder class that provides handy methods to construct {@link CouchbaseSourceConfig} for testing.
  */
 public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<CouchbaseSourceConfigBuilder> {
 
@@ -38,7 +38,7 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
     return new CouchbaseSourceConfigBuilder();
   }
 
-  public static CouchbaseSourceConfigBuilder builder(CouchbaseSource.CouchbaseSourceConfig original) {
+  public static CouchbaseSourceConfigBuilder builder(CouchbaseSourceConfig original) {
     return builder()
       .setReferenceName(original.getReferenceName())
       .setNodes(original.getNodes())
@@ -89,9 +89,8 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
     return this;
   }
 
-  public CouchbaseSource.CouchbaseSourceConfig build() {
-    return new CouchbaseSource.CouchbaseSourceConfig(referenceName, nodes, bucket, user, password, selectFields,
-                                                     conditions, onError, schema, maxParallelism, scanConsistency,
-                                                     timeout);
+  public CouchbaseSourceConfig build() {
+    return new CouchbaseSourceConfig(referenceName, nodes, bucket, user, password, selectFields, conditions,
+                                     onError, schema, maxParallelism, scanConsistency, timeout);
   }
 }
