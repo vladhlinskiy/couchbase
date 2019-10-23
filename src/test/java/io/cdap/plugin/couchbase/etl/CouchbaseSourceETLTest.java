@@ -165,8 +165,59 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
   }
 
   @Test
+  public void testSourceSingleSplit() throws Exception {
+    Map<String, String> properties = sourceProperties("*", SCHEMA, 1);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
+      assertNumericEquals(expected, actual);
+      assertMapEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
+  public void testSourceTwoSplits() throws Exception {
+    Map<String, String> properties = sourceProperties("*", SCHEMA, 2);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
+      assertNumericEquals(expected, actual);
+      assertMapEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
+  public void testSourceNumSplitsGreaterThanDocumentsNumber() throws Exception {
+    Map<String, String> properties = sourceProperties("*", SCHEMA, 20);
+    List<StructuredRecord> records = getPipelineResults(properties);
+    Assert.assertEquals(TEST_DOCUMENTS.size(), records.size());
+    for (StructuredRecord actual : records) {
+      Long actualCreatedAt = actual.get("created");
+      Assert.assertNotNull(actualCreatedAt);
+      JsonDocument expected = getTestDocumentByCreationTime(actualCreatedAt);
+      Assert.assertNotNull(expected);
+      assertNumericEquals(expected, actual);
+      assertMapEquals("object_map", expected, actual);
+      assertRecordEquals("object", expected, actual);
+      assertEquals(expected, actual);
+    }
+  }
+
+  @Test
   public void testSourceWithConditions() throws Exception {
-    Map<String, String> properties = sourceProperties("*", "`boolean` = true", SCHEMA);
+    Map<String, String> properties = sourceProperties("*", "`boolean` = true", SCHEMA, null);
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(1, records.size()); // single document satisfies the criteria
     for (StructuredRecord actual : records) {
@@ -241,7 +292,7 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
 
   @Test
   public void testSourceWithConditionsInferredSchema() throws Exception {
-    Map<String, String> properties = sourceProperties("*", "`boolean` = true", null);
+    Map<String, String> properties = sourceProperties("*", "`boolean` = true", null, null);
     List<StructuredRecord> records = getPipelineResults(properties);
     Assert.assertEquals(1, records.size()); // single document satisfies the criteria
     for (StructuredRecord actual : records) {
@@ -370,12 +421,17 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
     }
   }
 
+  private Map<String, String> sourceProperties(String selectFields, @Nullable Schema schema,
+                                               @Nullable Integer numSplits) {
+    return sourceProperties(selectFields, null, schema, numSplits);
+  }
+
   private Map<String, String> sourceProperties(String selectFields, @Nullable Schema schema) {
-    return sourceProperties(selectFields, null, schema);
+    return sourceProperties(selectFields, null, schema, null);
   }
 
   private Map<String, String> sourceProperties(String selectFields, @Nullable String conditions,
-                                               @Nullable Schema schema) {
+                                               @Nullable Schema schema, @Nullable Integer numSplits) {
     return new ImmutableMap.Builder<String, String>()
       .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
       .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
@@ -385,7 +441,7 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       .put(CouchbaseConstants.SCHEMA, schema != null ? schema.toString() : "")
       .put(CouchbaseConstants.SELECT_FIELDS, selectFields)
       .put(CouchbaseConstants.CONDITIONS, conditions != null ? conditions : "")
-      .put(CouchbaseConstants.NUM_SPLITS, "0")
+      .put(CouchbaseConstants.NUM_SPLITS, numSplits != null ? numSplits.toString() : "0")
       .put(CouchbaseConstants.SAMPLE_SIZE, "1000")
       .put(CouchbaseConstants.MAX_PARALLELISM, "0")
       .put(CouchbaseConstants.SCAN_CONSISTENCY, Consistency.NOT_BOUNDED.getDisplayName())

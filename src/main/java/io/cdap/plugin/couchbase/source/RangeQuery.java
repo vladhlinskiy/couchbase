@@ -16,7 +16,6 @@
 package io.cdap.plugin.couchbase.source;
 
 import com.couchbase.client.java.query.N1qlQuery;
-import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.Select;
 import com.couchbase.client.java.query.Statement;
 import com.couchbase.client.java.query.dsl.Expression;
@@ -25,49 +24,28 @@ import com.google.common.base.Strings;
 import java.math.BigInteger;
 
 /**
- * Couchbase chunk query used by {@link CouchbaseSplit}. Allows, to read data by chunks of the specified size.
- * Chunk size must be less than or equal to {@value Integer#MAX_VALUE} since Couchbbase Java SDK
- * {@link N1qlQueryResult} can not contain more than {@value Integer#MAX_VALUE} rows whereas Couchbase has no limit on
- * documents number.
+ * Couchbase range query used by {@link CouchbaseSplit}.
  */
-public class ChunkQuery extends Query {
-
-  public static final int CHUNK_SIZE = Integer.MAX_VALUE;
+public class RangeQuery extends Query {
 
   private BigInteger offset;
   private final BigInteger limit;
 
-  public ChunkQuery(String bucket, String selectFields, String conditions, BigInteger offset,
-                    BigInteger limit) {
+  public RangeQuery(String bucket, String selectFields, String conditions, BigInteger offset, BigInteger limit) {
     super(bucket, selectFields, conditions);
     this.offset = offset;
     this.limit = limit;
   }
 
   @Override
-  public N1qlQuery getNextN1qlQuery() {
-    if (!hasNext) {
-      return null;
-    }
-    if (limit.subtract(offset).compareTo(BigInteger.valueOf(CHUNK_SIZE)) <= 0) {
-      hasNext = false;
-      return rangedQuery(limit, offset);
-    }
-
-    BigInteger curLimit = offset.add(BigInteger.valueOf(CHUNK_SIZE));
-    N1qlQuery rangedQuery = rangedQuery(curLimit, offset);
-    offset = offset.add(curLimit);
-
-    return rangedQuery;
-  }
-
-  private N1qlQuery rangedQuery(BigInteger limit, BigInteger offset) {
+  public N1qlQuery getN1qlQuery() {
     Statement statement = Strings.isNullOrEmpty(conditions)
       ? Select.select(selectFields).from(Expression.i(bucket))
       : Select.select(selectFields).from(Expression.i(bucket)).where(conditions);
 
     // OffsetPath#offset(int offset) can not be used, since it does not work with offsets greater than Integer.MAX_VALUE
-    String offsetLimitQuery = String.format("%s OFFSET %d LIMIT %d", statement.toString(), offset, limit);
+    String offsetLimitQuery = String.format("%s OFFSET %s LIMIT %s", statement.toString(), offset.toString(),
+                                            limit.toString());
     return N1qlQuery.simple(offsetLimitQuery);
   }
 }

@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.couchbase.CouchbaseUtil;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -92,9 +93,7 @@ public class JsonObjectToRecordTransformer {
   private StructuredRecord extractRecord(@Nullable String fieldName, JsonObject object, Schema schema) {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (String propertyName : object.getNames()) {
-      // TODO move to utils
-      // Replaces any character that are not one of [A-Z][a-z][0-9] or _ with an underscore (_).
-      String validPropertyName = propertyName.toLowerCase().replaceAll("[^A-Za-z0-9]", "_");
+      String validPropertyName = CouchbaseUtil.fieldName(propertyName);
       Schema.Field field = schema.getField(validPropertyName);
       if (field == null) {
         continue;

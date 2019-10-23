@@ -42,17 +42,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * InputFormat for mapreduce job, which provides a single split of data.
+ * Couchbase input format for mapreduce job, deserializes configuration and creates input splits according to the
+ * specified number of splits.
  */
-public class N1qlQueryRowInputFormat extends InputFormat {
+public class JsonObjectRowInputFormat extends InputFormat {
 
   private static final Gson gson = new GsonBuilder().create();
 
   @Override
   public List<InputSplit> getSplits(JobContext jobContext) {
     Configuration conf = jobContext.getConfiguration();
-    String confJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
-    CouchbaseSource.CouchbaseSourceConfig config = gson.fromJson(confJson, CouchbaseSource.CouchbaseSourceConfig.class);
+    String confJson = conf.get(JsonObjectInputFormatProvider.PROPERTY_CONFIG_JSON);
+    CouchbaseSourceConfig config = gson.fromJson(confJson, CouchbaseSourceConfig.class);
     int mapTasks = conf.getInt(MRJobConfig.NUM_MAPS, 1);
     BigInteger numSplits = config.getNumSplits() == 0 ? BigInteger.valueOf(mapTasks)
       : BigInteger.valueOf(config.getNumSplits());
@@ -75,20 +76,20 @@ public class N1qlQueryRowInputFormat extends InputFormat {
     for (int i = 0; i < numSplits.intValue(); i++) {
       BigInteger offset = documentsPerSplit.multiply(BigInteger.valueOf(i));
       BigInteger limit = i == numSplits.intValue() - 1 ? documentsPerSplit.add(remainder) : documentsPerSplit;
-      Query query = new ChunkQuery(config.getBucket(), config.getSelectFields(), config.getConditions(), offset, limit);
+      Query query = new RangeQuery(config.getBucket(), config.getSelectFields(), config.getConditions(), offset, limit);
       splits.add(new CouchbaseSplit(query));
     }
 
     return splits;
   }
 
-  private BigInteger getDocumentsNumber(CouchbaseSource.CouchbaseSourceConfig config) {
+  private BigInteger getDocumentsNumber(CouchbaseSourceConfig config) {
     Cluster cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
       cluster.authenticate(config.getUser(), config.getPassword());
     }
-    Bucket bucket = cluster.openBucket(config.getBucket());
 
+    Bucket bucket = cluster.openBucket(config.getBucket());
     String statement = String.format("SELECT COUNT(*) AS doc_num FROM `%s`", config.getBucket());
     N1qlQueryResult result = bucket.query(N1qlQuery.simple(statement));
     if (!result.finalSuccess()) {
@@ -124,8 +125,8 @@ public class N1qlQueryRowInputFormat extends InputFormat {
   }
 
   @Override
-  public RecordReader<NullWritable, N1qlQueryRow> createRecordReader(
-    InputSplit inputSplit, TaskAttemptContext taskAttemptContext) {
-    return new N1qlQueryRowRecordReader();
+  public RecordReader<NullWritable, JsonObject> createRecordReader(InputSplit inputSplit,
+                                                                   TaskAttemptContext taskAttemptContext) {
+    return new JsonObjectRecordReader();
   }
 }

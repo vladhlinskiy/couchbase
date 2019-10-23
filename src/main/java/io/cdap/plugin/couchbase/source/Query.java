@@ -22,7 +22,6 @@ import com.couchbase.client.java.query.dsl.Expression;
 import com.google.common.base.Strings;
 
 import java.io.Serializable;
-import javax.annotation.Nullable;
 
 /**
  * Couchbase query used by {@link CouchbaseSplit}.
@@ -32,31 +31,14 @@ public class Query implements Serializable {
   protected final String bucket;
   protected final String selectFields;
   protected final String conditions;
-  protected boolean hasNext;
 
   public Query(String bucket, String selectFields, String conditions) {
     this.bucket = bucket;
     this.selectFields = selectFields;
     this.conditions = conditions;
-    this.hasNext = true;
   }
 
-  public boolean hasNext() {
-    return hasNext;
-  }
-
-  /**
-   * TODO
-   *
-   * @return
-   */
-  @Nullable
-  public N1qlQuery getNextN1qlQuery() {
-    if (!hasNext) {
-      return null;
-    }
-
-    hasNext = false;
+  public N1qlQuery getN1qlQuery() {
     Statement statement = Strings.isNullOrEmpty(conditions)
       ? Select.select(selectFields).from(Expression.i(bucket))
       : Select.select(selectFields).from(Expression.i(bucket)).where(conditions);

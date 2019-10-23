@@ -44,6 +44,7 @@ import io.cdap.cdap.etl.api.validation.InvalidStageException;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.couchbase.CouchbaseConfig;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
+import io.cdap.plugin.couchbase.CouchbaseUtil;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ import javax.annotation.Nullable;
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name(CouchbaseConstants.PLUGIN_NAME)
 @Description("Read data from Couchbase Server.")
-public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, StructuredRecord> {
+public class CouchbaseSource extends BatchSource<NullWritable, JsonObject, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CouchbaseSource.class);
   private final CouchbaseSourceConfig config;
@@ -101,7 +102,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
                                  .map(Schema.Field::getName)
                                  .collect(Collectors.toList()));
 
-    context.setInput(Input.of(config.getReferenceName(), new N1qlQueryRowInputFormatProvider(config)));
+    context.setInput(Input.of(config.getReferenceName(), new JsonObjectInputFormatProvider(config)));
   }
 
   @Override
@@ -112,9 +113,8 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
   }
 
   @Override
-  public void transform(KeyValue<NullWritable, N1qlQueryRow> input, Emitter<StructuredRecord> emitter) {
-    N1qlQueryRow row = input.getValue();
-    JsonObject value = row.value();
+  public void transform(KeyValue<NullWritable, JsonObject> input, Emitter<StructuredRecord> emitter) {
+    JsonObject value = input.getValue();
     try {
       emitter.emit(transformer.transform(value));
     } catch (Exception e) {
@@ -202,9 +202,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
       }
       JsonObject propertyMetadata = couchbasePropertiesMetadata.getObject(propertyName);
       Schema propertySchema = propertySchema(propertyName, propertyMetadata);
-      // TODO move to utils
-      // Replaces any character that are not one of [A-Z][a-z][0-9] or _ with an underscore (_).
-      String fieldName = propertyName.toLowerCase().replaceAll("[^A-Za-z0-9]", "_");
+      String fieldName = CouchbaseUtil.fieldName(propertyName);
       fields.add(Schema.Field.of(fieldName, propertySchema));
     }
 
