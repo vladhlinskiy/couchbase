@@ -121,4 +121,9 @@ public class CouchbaseConstants {
    * the specified value is zero, the plugin will use the number of map tasks as the number of splits.
    */
   public static final String NUM_SPLITS = "numSplits";
+
+  /**
+   * Configuration property name used to specify N1QL query to run.
+   */
+  public static final String QUERY = "query";
 }
