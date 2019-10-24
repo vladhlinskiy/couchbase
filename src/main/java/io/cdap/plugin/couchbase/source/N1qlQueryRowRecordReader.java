@@ -50,6 +50,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   private static final Logger LOG = LoggerFactory.getLogger(N1qlQueryRowRecordReader.class);
   private static final Gson gson = new GsonBuilder().create();
 
+  private Cluster cluster;
   private Bucket bucket;
   private Iterator<N1qlQueryRow> iterator;
   private N1qlQueryRow value;
@@ -66,7 +67,7 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
     String configJson = conf.get(N1qlQueryRowInputFormatProvider.PROPERTY_CONFIG_JSON);
     CouchbaseSourceConfig config = gson.fromJson(configJson, CouchbaseSourceConfig.class);
 
-    Cluster cluster = CouchbaseCluster.create(config.getNodeList());
+    this.cluster = CouchbaseCluster.create(config.getNodeList());
     if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
       cluster.authenticate(config.getUser(), config.getPassword());
     }
@@ -122,5 +123,6 @@ public class N1qlQueryRowRecordReader extends RecordReader<NullWritable, N1qlQue
   public void close() throws IOException {
     LOG.trace("Closing Record reader");
     this.bucket.close();
+    this.cluster.disconnect();
   }
 }

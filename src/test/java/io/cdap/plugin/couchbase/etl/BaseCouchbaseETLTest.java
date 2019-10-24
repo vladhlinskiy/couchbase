@@ -47,6 +47,7 @@ import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
 import io.cdap.plugin.couchbase.source.CouchbaseSource;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -71,6 +72,7 @@ public abstract class BaseCouchbaseETLTest extends HydratorTestBase {
 
   private static final ArtifactSummary APP_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
 
+  protected static Cluster cluster;
   protected static Bucket bucket;
 
   @Rule
@@ -92,7 +94,7 @@ public abstract class BaseCouchbaseETLTest extends HydratorTestBase {
     String username = BASE_PROPERTIES.get(CouchbaseConstants.USERNAME);
     String password = BASE_PROPERTIES.get(CouchbaseConstants.PASSWORD);
     String bucketName = BASE_PROPERTIES.get(CouchbaseConstants.BUCKET);
-    Cluster cluster = CouchbaseCluster.create(nodes);
+    cluster = CouchbaseCluster.create(nodes);
     if (!Strings.isNullOrEmpty(username) || !Strings.isNullOrEmpty(password)) {
       cluster.authenticate(username, password);
     }
@@ -112,6 +114,12 @@ public abstract class BaseCouchbaseETLTest extends HydratorTestBase {
     bucket = cluster.openBucket(bucketName);
     // Buckets with no index cannot be queried. Documents can only be retrieved by making use of the USE KEYS operator
     bucket.bucketManager().createN1qlPrimaryIndex(true, false, 60, TimeUnit.SECONDS);
+  }
+
+  @AfterClass
+  public static void afterTestClass() throws Exception {
+    bucket.close();
+    cluster.disconnect();
   }
 
   public List<StructuredRecord> getPipelineResults(Map<String, String> sourceProperties) throws Exception {
