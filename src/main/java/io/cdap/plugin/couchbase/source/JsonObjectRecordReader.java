@@ -83,8 +83,8 @@ public class JsonObjectRecordReader extends RecordReader<NullWritable, JsonObjec
    */
   public Observable<AsyncN1qlQueryRow> query(N1qlQuery query) {
     return bucket.async()
-      .query(query).flatMap(result -> Observable
-        .merge(result.rows(), result.errors())
+      .query(query)
+      .flatMap(result -> Observable.merge(result.rows(), result.errors())
         .map(rowOrError -> {
           if (rowOrError instanceof AsyncN1qlQueryRow) {
             return (AsyncN1qlQueryRow) rowOrError;
