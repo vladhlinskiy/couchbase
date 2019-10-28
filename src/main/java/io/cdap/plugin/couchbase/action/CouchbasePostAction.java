@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
+import io.cdap.plugin.couchbase.exception.CouchbaseExecutionException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -64,14 +65,18 @@ public class CouchbasePostAction extends PostAction {
       cluster.authenticate(config.getUser(), config.getPassword());
     }
     Bucket bucket = cluster.openBucket(config.getBucket());
-    N1qlQuery query = N1qlQuery.simple(config.getQuery());
-    query.params()
-      .consistency(config.getScanConsistency().getScanConsistency())
-      .maxParallelism(config.getMaxParallelism())
-      .serverSideTimeout(config.getTimeout(), TimeUnit.SECONDS);
-    bucket.query(query);
-
-    bucket.close();
-    cluster.disconnect();
+    try {
+      N1qlQuery query = N1qlQuery.simple(config.getQuery());
+      query.params()
+        .consistency(config.getScanConsistency().getScanConsistency())
+        .maxParallelism(config.getMaxParallelism())
+        .serverSideTimeout(config.getTimeout(), TimeUnit.SECONDS);
+      bucket.query(query);
+    } catch (Throwable e) {
+      throw new CouchbaseExecutionException(String.format("Failed to run N1QL query: '%s'", config.getQuery()), e);
+    } finally {
+      bucket.close();
+      cluster.disconnect();
+    }
   }
 }

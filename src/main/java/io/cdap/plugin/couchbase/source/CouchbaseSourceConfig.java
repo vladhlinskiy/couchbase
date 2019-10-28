@@ -67,6 +67,7 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   @Description("Desired number of splits to divide the query into when reading from Couchbase. Fewer splits may be " +
     "created if the query cannot be divided into the desired number of splits. If the specified value is zero, the " +
     "plugin will use the number of map tasks as the number of splits.")
+  @Macro
   private int numSplits;
 
   @Name(CouchbaseConstants.ON_ERROR)
@@ -83,6 +84,7 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
   @Description("Configuration property name used to specify the number of documents to randomly sample in the " +
     "bucket when inferring the schema. The default sample size is 1000 documents. If a bucket contains fewer " +
     "documents than the specified number, then all the documents in the bucket will be used.")
+  @Macro
   private int sampleSize;
 
   @Name(CouchbaseConstants.MAX_PARALLELISM)
@@ -93,10 +95,12 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
 
   @Name(CouchbaseConstants.SCAN_CONSISTENCY)
   @Description("Specifies the consistency guarantee or constraint for index scanning.")
+  @Macro
   private String consistency;
 
   @Name(CouchbaseConstants.QUERY_TIMEOUT)
   @Description("Number of seconds to wait before a timeout has occurred on a query.")
+  @Macro
   private int timeout;
 
   public CouchbaseSourceConfig(String referenceName, String nodes, String bucket, String user, String password,

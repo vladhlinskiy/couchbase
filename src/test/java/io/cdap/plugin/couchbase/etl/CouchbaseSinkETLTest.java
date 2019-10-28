@@ -134,18 +134,7 @@ public class CouchbaseSinkETLTest extends BaseCouchbaseETLTest {
 
   @Test
   public void testSink() throws Exception {
-    Map<String, String> sinkProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, name.getMethodName())
-      .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
-      .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
-      .put(CouchbaseConstants.PASSWORD, BASE_PROPERTIES.get(CouchbaseConstants.PASSWORD))
-      .put(CouchbaseConstants.BUCKET, BASE_PROPERTIES.get(CouchbaseConstants.BUCKET))
-      .put(CouchbaseConstants.KEY_FIELD, "id")
-      .put(CouchbaseConstants.SCHEMA, SCHEMA.toString())
-      .put(CouchbaseConstants.BATCH_SIZE, "100")
-      .put(CouchbaseConstants.OPERATION, OperationType.INSERT.name())
-      .build();
-
+    Map<String, String> sinkProperties = sinkProperties(OperationType.INSERT);
     List<N1qlQueryRow> rows = getPipelineResults(sinkProperties, TEST_RECORDS);
     Assert.assertEquals(TEST_RECORDS.size(), rows.size());
     for (int i = 0; i < rows.size(); i++) {
@@ -163,17 +152,7 @@ public class CouchbaseSinkETLTest extends BaseCouchbaseETLTest {
       .map(r -> JsonDocument.create(r.<String>get("id"), JsonObject.empty()))
       .forEach(bucket::insert);
 
-    Map<String, String> sinkProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, name.getMethodName())
-      .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
-      .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
-      .put(CouchbaseConstants.PASSWORD, BASE_PROPERTIES.get(CouchbaseConstants.PASSWORD))
-      .put(CouchbaseConstants.BUCKET, BASE_PROPERTIES.get(CouchbaseConstants.BUCKET))
-      .put(CouchbaseConstants.KEY_FIELD, "id")
-      .put(CouchbaseConstants.SCHEMA, SCHEMA.toString())
-      .put(CouchbaseConstants.BATCH_SIZE, "100")
-      .put(CouchbaseConstants.OPERATION, OperationType.REPLACE.name())
-      .build();
+    Map<String, String> sinkProperties = sinkProperties(OperationType.REPLACE);
     List<N1qlQueryRow> rows = getPipelineResults(sinkProperties, TEST_RECORDS);
     Assert.assertEquals(TEST_RECORDS.size(), rows.size());
     for (int i = 0; i < rows.size(); i++) {
@@ -191,17 +170,7 @@ public class CouchbaseSinkETLTest extends BaseCouchbaseETLTest {
       .map(r -> JsonDocument.create(r.<String>get("id"), JsonObject.empty()))
       .ifPresent(bucket::insert);
 
-    Map<String, String> sinkProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, name.getMethodName())
-      .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
-      .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
-      .put(CouchbaseConstants.PASSWORD, BASE_PROPERTIES.get(CouchbaseConstants.PASSWORD))
-      .put(CouchbaseConstants.BUCKET, BASE_PROPERTIES.get(CouchbaseConstants.BUCKET))
-      .put(CouchbaseConstants.KEY_FIELD, "id")
-      .put(CouchbaseConstants.SCHEMA, SCHEMA.toString())
-      .put(CouchbaseConstants.BATCH_SIZE, "100")
-      .put(CouchbaseConstants.OPERATION, OperationType.UPSERT.name())
-      .build();
+    Map<String, String> sinkProperties = sinkProperties(OperationType.UPSERT);
     List<N1qlQueryRow> rows = getPipelineResults(sinkProperties, TEST_RECORDS);
     Assert.assertEquals(TEST_RECORDS.size(), rows.size());
     for (int i = 0; i < rows.size(); i++) {
@@ -254,6 +223,20 @@ public class CouchbaseSinkETLTest extends BaseCouchbaseETLTest {
     if (expected.get("union") instanceof String) {
       Assert.assertEquals(expected.get("union"), actual.getString("union"));
     }
+  }
+
+  private Map<String, String> sinkProperties(OperationType operation) {
+    return new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, name.getMethodName())
+      .put(CouchbaseConstants.NODES, BASE_PROPERTIES.get(CouchbaseConstants.NODES))
+      .put(CouchbaseConstants.USERNAME, BASE_PROPERTIES.get(CouchbaseConstants.USERNAME))
+      .put(CouchbaseConstants.PASSWORD, BASE_PROPERTIES.get(CouchbaseConstants.PASSWORD))
+      .put(CouchbaseConstants.BUCKET, BASE_PROPERTIES.get(CouchbaseConstants.BUCKET))
+      .put(CouchbaseConstants.KEY_FIELD, "id")
+      .put(CouchbaseConstants.SCHEMA, SCHEMA.toString())
+      .put(CouchbaseConstants.BATCH_SIZE, "100")
+      .put(CouchbaseConstants.OPERATION, operation.name())
+      .build();
   }
 
   private List<N1qlQueryRow> getPipelineResults(Map<String, String> sinkProperties,

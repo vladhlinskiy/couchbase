@@ -42,14 +42,17 @@ public class CouchbaseActionConfig extends CouchbaseConfig {
   @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less " +
     "than zero or greater than the total number of cores in a cluster, the system will use all available cores in " +
     "the cluster.")
+  @Macro
   private int maxParallelism;
 
   @Name(CouchbaseConstants.SCAN_CONSISTENCY)
   @Description("Specifies the consistency guarantee or constraint for index scanning.")
+  @Macro
   private String consistency;
 
   @Name(CouchbaseConstants.QUERY_TIMEOUT)
   @Description("Number of seconds to wait before a timeout has occurred on a query.")
+  @Macro
   private int timeout;
 
   public CouchbaseActionConfig(String referenceName, String nodes, String bucket, String user, String password,
