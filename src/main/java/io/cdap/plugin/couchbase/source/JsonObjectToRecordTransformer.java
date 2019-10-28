@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.couchbase.CouchbaseUtil;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,7 +30,6 @@ import java.math.MathContext;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -92,14 +92,19 @@ public class JsonObjectToRecordTransformer {
 
   private StructuredRecord extractRecord(@Nullable String fieldName, JsonObject object, Schema schema) {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-    List<Schema.Field> fields = Objects.requireNonNull(schema.getFields(), "Schema fields cannot be empty");
-    for (Schema.Field field : fields) {
+    for (String propertyName : object.getNames()) {
+      String validPropertyName = CouchbaseUtil.fieldName(propertyName);
+      Schema.Field field = schema.getField(validPropertyName);
+      if (field == null) {
+        continue;
+      }
+
       // Use full field name for nested records to construct meaningful errors messages.
       // Full field names will be in the following format: 'record_field_name.nested_record_field_name'
       String fullFieldName = fieldName != null ? String.format("%s.%s", fieldName, field.getName()) : field.getName();
       Schema nonNullableSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable()
         : field.getSchema();
-      Object value = extractValue(fullFieldName, object.get(field.getName()), nonNullableSchema);
+      Object value = extractValue(fullFieldName, object.get(propertyName), nonNullableSchema);
       builder.set(field.getName(), value);
     }
     return builder.build();
@@ -137,8 +142,8 @@ public class JsonObjectToRecordTransformer {
         ensureTypeValid(fieldName, object, Integer.class, Long.class);
         return ((Number) object).longValue();
       case STRING:
-        ensureTypeValid(fieldName, object, String.class);
-        return object;
+        ensureTypeValid(fieldName, object, String.class, Number.class);
+        return object.toString();
       case MAP:
         ensureTypeValid(fieldName, object, JsonObject.class);
         Schema valueSchema = schema.getMapSchema().getValue().isNullable()

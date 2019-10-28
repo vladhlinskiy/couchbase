@@ -34,6 +34,14 @@
           "widget-type": "textbox",
           "label": "Conditions",
           "name": "conditions"
+        },
+        {
+          "widget-type": "number",
+          "label": "Number of Splits",
+          "name": "numSplits",
+          "widget-attributes": {
+            "default": "0"
+          }
         }
       ]
     },
@@ -83,6 +91,14 @@
     {
       "label": "Advanced",
       "properties": [
+        {
+          "widget-type": "number",
+          "label": "Sample Size",
+          "name": "sampleSize",
+          "widget-attributes": {
+            "default": "1000"
+          }
+        },
         {
           "widget-type": "number",
           "label": "Max Parallelism",

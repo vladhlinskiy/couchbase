@@ -107,4 +107,23 @@ public class CouchbaseConstants {
    * data stored per write. Commits of 1 MiB usually provide the best performance. Default value is 100 records.
    */
   public static final String BATCH_SIZE = "batchSize";
+
+  /**
+   * Configuration property name used to specify the number of documents to randomly sample in the bucket when
+   * inferring the schema. The default sample size is 1000 documents. If a bucket contains fewer documents than the
+   * specified number, then all the documents in the bucket will be used.
+   */
+  public static final String SAMPLE_SIZE = "sampleSize";
+
+  /**
+   * Configuration property name used to specify the desired number of splits to divide the query into when reading
+   * from Couchbase. Fewer splits may be created if the query cannot be divided into the desired number of splits. If
+   * the specified value is zero, the plugin will use the number of map tasks as the number of splits.
+   */
+  public static final String NUM_SPLITS = "numSplits";
+
+  /**
+   * Configuration property name used to specify N1QL query to run.
+   */
+  public static final String QUERY = "query";
 }

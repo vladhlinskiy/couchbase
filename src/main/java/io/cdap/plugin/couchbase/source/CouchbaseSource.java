@@ -15,9 +15,16 @@
  */
 package io.cdap.plugin.couchbase.source;
 
+import com.couchbase.client.java.Bucket;
+import com.couchbase.client.java.Cluster;
+import com.couchbase.client.java.CouchbaseCluster;
+import com.couchbase.client.java.document.json.JsonArray;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.query.N1qlQuery;
+import com.couchbase.client.java.query.N1qlQueryResult;
 import com.couchbase.client.java.query.N1qlQueryRow;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -33,13 +40,19 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.cdap.etl.api.validation.InvalidStageException;
 import io.cdap.plugin.common.LineageRecorder;
+import io.cdap.plugin.couchbase.CouchbaseConfig;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
+import io.cdap.plugin.couchbase.CouchbaseUtil;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Plugin returns records from Couchbase Server.
@@ -47,7 +60,7 @@ import java.util.stream.Collectors;
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name(CouchbaseConstants.PLUGIN_NAME)
 @Description("Read data from Couchbase Server.")
-public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, StructuredRecord> {
+public class CouchbaseSource extends BatchSource<NullWritable, JsonObject, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CouchbaseSource.class);
   private final CouchbaseSourceConfig config;
@@ -63,8 +76,15 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
     FailureCollector collector = stageConfigurer.getFailureCollector();
     config.validate(collector);
     collector.getOrThrowException();
-    Schema schema = config.getParsedSchema();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    Schema schema = getSchema();
+    Schema configuredSchema = config.getParsedSchema();
+    if (configuredSchema == null) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+      return;
+    }
+    CouchbaseConfig.validateFieldsMatch(schema, configuredSchema, collector);
+    collector.getOrThrowException();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(configuredSchema);
     pipelineConfigurer.getStageConfigurer().setErrorSchema(CouchbaseSourceConfig.ERROR_SCHEMA);
   }
 
@@ -82,7 +102,7 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
                                  .map(Schema.Field::getName)
                                  .collect(Collectors.toList()));
 
-    context.setInput(Input.of(config.getReferenceName(), new N1qlQueryRowInputFormatProvider(config)));
+    context.setInput(Input.of(config.getReferenceName(), new JsonObjectInputFormatProvider(config)));
   }
 
   @Override
@@ -93,9 +113,8 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
   }
 
   @Override
-  public void transform(KeyValue<NullWritable, N1qlQueryRow> input, Emitter<StructuredRecord> emitter) {
-    N1qlQueryRow row = input.getValue();
-    JsonObject value = row.value();
+  public void transform(KeyValue<NullWritable, JsonObject> input, Emitter<StructuredRecord> emitter) {
+    JsonObject value = input.getValue();
     try {
       emitter.emit(transformer.transform(value));
     } catch (Exception e) {
@@ -116,6 +135,100 @@ public class CouchbaseSource extends BatchSource<NullWritable, N1qlQueryRow, Str
           throw new IllegalStateException(String.format("Unknown error handling strategy '%s'",
                                                         config.getErrorHandling()));
       }
+    }
+  }
+
+  public Schema getSchema() {
+    Cluster cluster = CouchbaseCluster.create(config.getNodeList());
+    if (!Strings.isNullOrEmpty(config.getUser()) || !Strings.isNullOrEmpty(config.getPassword())) {
+      cluster.authenticate(config.getUser(), config.getPassword());
+    }
+    String bucketName = config.getBucket();
+    Bucket bucket = cluster.openBucket(bucketName);
+    String inferStatement = String.format("INFER `%s` WITH {\"sample_size\":%d};", bucketName, config.getSampleSize());
+    N1qlQuery query = N1qlQuery.simple(inferStatement);
+    N1qlQueryResult result = bucket.query(query);
+    if (!result.finalSuccess()) {
+      String errorMessage = result.errors().stream()
+        .map(JsonObject::toString)
+        .collect(Collectors.joining("\n"));
+      throw new InvalidStageException(String.format("Unable to infer output schema: '%s'", errorMessage));
+    }
+
+    // row.value() can not be used since it expects the result to be a JSON document. However, the result is an array
+    // that can not be deserialized as JsonObject
+    N1qlQueryRow row = result.rows().next();
+    String json = row.toString();
+    // Deserialize the output in the JSON Schema draft v4 format as JsonArray
+    // The output is an array of schema documents, each of them groups properties for docs with similar structure
+    // See: https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/infer.html#example
+    JsonArray couchbaseSchema = JsonArray.fromJson(json);
+
+    List<Schema.Field> fields = new ArrayList<>();
+    // Select fields may contain metadata fields such as meta(`travel-sample`).id
+    // Include them to the inferred schema as well using simple names after dot character
+    // All metadata fields are strings
+    if (config.getSelectFieldsList() != null) {
+      List<Schema.Field> metadataFields = config.getSelectFieldsList().stream()
+        .filter(f -> f.startsWith("meta"))
+        .map(f -> f.substring(f.lastIndexOf(".") + 1))
+        .map(simpleName -> Schema.Field.of(simpleName, Schema.of(Schema.Type.STRING)))
+        .collect(Collectors.toList());
+      fields.addAll(metadataFields);
+    }
+
+    for (int i = 0; i < couchbaseSchema.size(); i++) {
+      JsonObject schema = couchbaseSchema.getObject(i);
+      List<Schema.Field> schemaFields = recordSchema(schema, config.getSelectFieldsList());
+
+      // Schemas ordered by number of sample documents.
+      // Use inferred type that matches most of the documents
+      schemaFields.stream()
+        .filter(f -> !fields.contains(f))
+        .forEach(fields::add);
+    }
+
+    return Schema.recordOf("inferred-schema", fields);
+  }
+
+  private List<Schema.Field> recordSchema(JsonObject recordMetadata, @Nullable List<String> selectFields) {
+    JsonObject couchbasePropertiesMetadata = recordMetadata.getObject("properties");
+
+    List<Schema.Field> fields = new ArrayList<>();
+    for (String propertyName : couchbasePropertiesMetadata.getNames()) {
+      if (selectFields != null && !selectFields.contains(propertyName) && !selectFields.contains("*")) {
+        // include only selected fields
+        continue;
+      }
+      JsonObject propertyMetadata = couchbasePropertiesMetadata.getObject(propertyName);
+      Schema propertySchema = propertySchema(propertyName, propertyMetadata);
+      String fieldName = CouchbaseUtil.fieldName(propertyName);
+      fields.add(Schema.Field.of(fieldName, propertySchema));
+    }
+
+    return fields;
+  }
+
+  private Schema propertySchema(String propertyName, JsonObject propertyMetadata) {
+    String couchbaseType = propertyMetadata.getString("type");
+    switch (couchbaseType) {
+      case "null":
+      case "string":
+      case "number":
+        return Schema.nullableOf(Schema.of(Schema.Type.STRING));
+      case "boolean":
+        return Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN));
+      case "array":
+        JsonObject componentMetadata = propertyMetadata.getObject("items");
+        Schema componentSchema = propertySchema(propertyName, componentMetadata);
+        return Schema.nullableOf(Schema.arrayOf(componentSchema));
+      case "object":
+        List<Schema.Field> objectFields = recordSchema(propertyMetadata, null);
+        return Schema.nullableOf(Schema.recordOf(propertyName + "-inferred-nested", objectFields));
+      default:
+        // this should never happen
+        throw new InvalidStageException(String.format("Field '%s' is of unsupported type '%s'.", propertyName,
+                                                      propertyMetadata));
     }
   }
 }
