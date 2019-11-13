@@ -14,27 +14,22 @@
  * the License.
  */
 
-package io.cdap.plugin.couchbase;
+package io.cdap.plugin.couchbase.source;
 
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.etl.api.validation.CauseAttributes;
-import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
-import io.cdap.plugin.common.Constants;
+import io.cdap.plugin.couchbase.Consistency;
+import io.cdap.plugin.couchbase.CouchbaseConfigBuilder;
+import io.cdap.plugin.couchbase.CouchbaseConfigTest;
+import io.cdap.plugin.couchbase.CouchbaseConstants;
+import io.cdap.plugin.couchbase.ErrorHandling;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 
 /**
  * Tests of {@link CouchbaseSourceConfig} methods.
  */
-public class CouchbaseSourceConfigTest {
-
-  private static final String MOCK_STAGE = "mockstage";
+public class CouchbaseSourceConfigTest extends CouchbaseConfigTest {
 
   private static final Schema VALID_SCHEMA =
     Schema.recordOf("schema",
@@ -59,93 +54,14 @@ public class CouchbaseSourceConfigTest {
     .setQueryTimeout(600)
     .build();
 
-  @Test
-  public void testValidateValid() {
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    VALID_CONFIG.validate(failureCollector);
-    Assert.assertTrue(failureCollector.getValidationFailures().isEmpty());
+  @Override
+  protected CouchbaseConfigBuilder getValidConfigBuilder() {
+    return CouchbaseSourceConfigBuilder.builder(VALID_CONFIG);
   }
 
   @Test
   public void testGetParsedSchema() {
     Assert.assertEquals(VALID_SCHEMA, VALID_CONFIG.getParsedSchema());
-  }
-
-  @Test
-  public void testValidateReferenceNameNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setReferenceName(null)
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, Constants.Reference.REFERENCE_NAME);
-  }
-
-  @Test
-  public void testValidateReferenceNameEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setReferenceName("")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, Constants.Reference.REFERENCE_NAME);
-  }
-
-  @Test
-  public void testValidateReferenceNameInvalid() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setReferenceName("**********")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, Constants.Reference.REFERENCE_NAME);
-  }
-
-  @Test
-  public void testValidateNodesNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setNodes(null)
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.NODES);
-  }
-
-  @Test
-  public void testValidateNodesEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setNodes("")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.NODES);
-  }
-
-  @Test
-  public void testValidateBucketNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setBucket(null)
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.BUCKET);
-  }
-
-  @Test
-  public void testValidateBucketEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setBucket("")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.BUCKET);
   }
 
   @Test
@@ -293,76 +209,6 @@ public class CouchbaseSourceConfigTest {
   }
 
   @Test
-  public void testValidateUsernameEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setUser("")
-      .setPassword("username is empty, but password specified")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.USERNAME);
-  }
-
-  @Test
-  public void testValidatePasswordNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setUser("username specified, but password is null")
-      .setPassword(null)
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.PASSWORD);
-  }
-
-  @Test
-  public void testValidatePasswordEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setUser("username specified, but password is empty")
-      .setPassword("")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    assertValidationFailed(failureCollector, CouchbaseConstants.PASSWORD);
-  }
-
-  @Test
-  public void testValidateUsernameAndPasswordNull() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setUser(null)
-      .setPassword(null)
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    Assert.assertTrue(failureCollector.getValidationFailures().isEmpty());
-  }
-
-  @Test
-  public void testValidateUsernameAndPasswordEmpty() {
-    CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setUser("")
-      .setPassword("")
-      .build();
-
-    MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
-    config.validate(failureCollector);
-    Assert.assertTrue(failureCollector.getValidationFailures().isEmpty());
-  }
-
-  @Test
-  public void testNodeList() {
-    List<String> nodeList = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
-      .setNodes("node1,node2,node3")
-      .build()
-      .getNodeList();
-
-    Assert.assertEquals(Arrays.asList("node1", "node2", "node3"), nodeList);
-  }
-
-  @Test
   public void testValidateSchemaInvalid() {
     Schema schema = Schema.recordOf("invalid-schema", Schema.Field.of("unsupported", Schema.of(Schema.Type.BYTES)));
     CouchbaseSourceConfig config = CouchbaseSourceConfigBuilder.builder(VALID_CONFIG)
@@ -413,33 +259,5 @@ public class CouchbaseSourceConfigTest {
     MockFailureCollector failureCollector = new MockFailureCollector(MOCK_STAGE);
     config.validate(failureCollector);
     assertOutputSchemaValidationFailed(failureCollector, "nested");
-  }
-
-  private static void assertOutputSchemaValidationFailed(MockFailureCollector failureCollector, String fieldName) {
-    List<ValidationFailure> failureList = failureCollector.getValidationFailures();
-    Assert.assertEquals(1, failureList.size());
-    ValidationFailure failure = failureList.get(0);
-    List<ValidationFailure.Cause> causeList = getCauses(failure, CauseAttributes.OUTPUT_SCHEMA_FIELD);
-    Assert.assertEquals(1, causeList.size());
-    ValidationFailure.Cause cause = causeList.get(0);
-    Assert.assertEquals(fieldName, cause.getAttribute(CauseAttributes.OUTPUT_SCHEMA_FIELD));
-  }
-
-  private static void assertValidationFailed(MockFailureCollector failureCollector, String paramName) {
-    List<ValidationFailure> failureList = failureCollector.getValidationFailures();
-    Assert.assertEquals(1, failureList.size());
-    ValidationFailure failure = failureList.get(0);
-    List<ValidationFailure.Cause> causeList = getCauses(failure, CauseAttributes.STAGE_CONFIG);
-    Assert.assertEquals(1, causeList.size());
-    ValidationFailure.Cause cause = causeList.get(0);
-    Assert.assertEquals(paramName, cause.getAttribute(CauseAttributes.STAGE_CONFIG));
-  }
-
-  @Nonnull
-  private static List<ValidationFailure.Cause> getCauses(ValidationFailure failure, String attribute) {
-    return failure.getCauses()
-      .stream()
-      .filter(cause -> cause.getAttribute(attribute) != null)
-      .collect(Collectors.toList());
   }
 }

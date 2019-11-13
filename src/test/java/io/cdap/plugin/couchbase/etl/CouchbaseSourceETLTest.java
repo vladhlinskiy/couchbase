@@ -22,6 +22,21 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.datapipeline.SmartWorkflow;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.mock.batch.MockSink;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.proto.ProgramRunStatus;
+import io.cdap.cdap.proto.artifact.AppRequest;
+import io.cdap.cdap.proto.id.ApplicationId;
+import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.test.ApplicationManager;
+import io.cdap.cdap.test.DataSetManager;
+import io.cdap.cdap.test.WorkflowManager;
+import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.couchbase.Consistency;
 import io.cdap.plugin.couchbase.CouchbaseConstants;
 import io.cdap.plugin.couchbase.ErrorHandling;
@@ -35,6 +50,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
@@ -260,5 +276,33 @@ public class CouchbaseSourceETLTest extends BaseCouchbaseETLTest {
       .put(CouchbaseConstants.SCAN_CONSISTENCY, Consistency.NOT_BOUNDED.getDisplayName())
       .put(CouchbaseConstants.QUERY_TIMEOUT, "600")
       .build();
+  }
+
+  private List<StructuredRecord> getPipelineResults(Map<String, String> sourceProperties) throws Exception {
+    Map<String, String> allProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, name.getMethodName())
+      .putAll(sourceProperties)
+      .build();
+
+    ETLStage source = new ETLStage("CouchbaseSource", new ETLPlugin(CouchbaseConstants.PLUGIN_NAME,
+                                                                    BatchSource.PLUGIN_TYPE, allProperties, null));
+
+    String outputDatasetName = "output-batchsourcetest_" + name.getMethodName();
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    ApplicationId pipelineId = NamespaceId.DEFAULT.app("Couchbase_" + name.getMethodName());
+    ApplicationManager appManager = deployApplication(pipelineId, new AppRequest<>(APP_ARTIFACT, etlConfig));
+
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    return MockSink.readOutput(outputManager);
   }
 }
