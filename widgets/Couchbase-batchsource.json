@@ -33,7 +33,16 @@
         {
           "widget-type": "textbox",
           "label": "Conditions",
-          "name": "conditions"
+          "name": "conditions",
+          "plugin-function": {
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "omit-properties": [
+              {
+                "name": "schema"
+              }
+            ]
+          }
         },
         {
           "widget-type": "number",
