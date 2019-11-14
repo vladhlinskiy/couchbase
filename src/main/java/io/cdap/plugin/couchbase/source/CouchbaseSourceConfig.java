@@ -78,6 +78,7 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
 
   @Name(CouchbaseConstants.SCHEMA)
   @Description("Schema of records output by the source.")
+  @Nullable
   private String schema;
 
   @Name(CouchbaseConstants.SAMPLE_SIZE)
@@ -135,6 +136,7 @@ public class CouchbaseSourceConfig extends CouchbaseConfig {
     return onError;
   }
 
+  @Nullable
   public String getSchema() {
     return schema;
   }

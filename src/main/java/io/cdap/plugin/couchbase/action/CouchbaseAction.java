@@ -52,6 +52,7 @@ public class CouchbaseAction extends Action {
     super.configurePipeline(pipelineConfigurer);
     FailureCollector failureCollector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(failureCollector);
+    failureCollector.getOrThrowException();
   }
 
   @Override

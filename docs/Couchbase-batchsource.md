@@ -27,7 +27,12 @@ https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/selectint
 
 **Number of Splits:** Desired number of splits to divide the query into when reading from Couchbase.
 Fewer splits may be created if the query cannot be divided into the desired number of splits. If the specified value is
-zero, the plugin will use the number of map tasks as the number of splits.
+zero, the plugin will use the number of map tasks as the number of splits. Note, that there may be performance
+implications in the case when the specified value is greater than 1 and the conditions do not use indexed fields.
+For more information, see [Pagination Pushdown].
+
+[Pagination Pushdown]:
+https://docs.couchbase.com/server/6.0/learn/services-and-indexes/indexes/index_pushdowns.html#pagination-pushdown
 
 **Username:** User identity for connecting to the Couchbase.
 

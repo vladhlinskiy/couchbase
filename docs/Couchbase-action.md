@@ -22,7 +22,7 @@ Properties
 
 **Password:** Password to use to connect to the Couchbase.
 
-**Max Parallelism:** Maximum number of CPU cores can be used to process a query. If the specified value is less than
+**Max Parallelism:** Maximum number of CPU cores to be used to process a query. If the specified value is less than
 zero or greater than the total number of cores in a cluster, the system will use all available cores in the cluster.
 For more information, see [Parallelism Parameter].
 

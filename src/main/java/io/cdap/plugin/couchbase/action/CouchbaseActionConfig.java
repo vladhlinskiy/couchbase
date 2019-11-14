@@ -39,7 +39,7 @@ public class CouchbaseActionConfig extends CouchbaseConfig {
   private String query;
 
   @Name(CouchbaseConstants.MAX_PARALLELISM)
-  @Description("Maximum number of CPU cores can be used to process a query. If the specified value is less " +
+  @Description("Maximum number of CPU cores to be used to process a query. If the specified value is less " +
     "than zero or greater than the total number of cores in a cluster, the system will use all available cores in " +
     "the cluster.")
   @Macro

@@ -52,6 +52,7 @@ public class CouchbasePostAction extends PostAction {
     super.configurePipeline(pipelineConfigurer);
     FailureCollector failureCollector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(failureCollector);
+    failureCollector.getOrThrowException();
   }
 
   @Override

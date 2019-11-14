@@ -27,11 +27,13 @@ public class CouchbaseSourceConfigBuilder extends CouchbaseConfigBuilder<Couchba
   private String selectFields;
   private int numSplits;
   private String onError;
-  private String schema;
   private int sampleSize;
   private int maxParallelism;
   private String scanConsistency;
   private int timeout;
+
+  @Nullable
+  private String schema;
 
   @Nullable
   private String conditions;
