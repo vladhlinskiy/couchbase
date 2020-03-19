@@ -13,38 +13,37 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-package io.cdap.plugin.couchbase.source;
+package io.cdap.plugin.couchbase.sink;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.cdap.cdap.api.data.batch.InputFormatProvider;
+import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 
 import java.util.Map;
 
 /**
- * InputFormatProvider used by cdap to provide configurations to mapreduce job
+ * Provides CouchbaseOutputFormat's class name and configuration.
  */
-public class N1qlQueryRowInputFormatProvider implements InputFormatProvider {
-  public static final String PROPERTY_CONFIG_JSON = "cdap.couchbase.config";
-  private static final Gson gson = new GsonBuilder().create();
+public class CouchbaseOutputFormatProvider implements OutputFormatProvider {
 
+  public static final String PROPERTY_CONFIG_JSON = "cdap.couchbase.sink.config";
+  private static final Gson gson = new GsonBuilder().create();
   private final Map<String, String> conf;
 
-  public N1qlQueryRowInputFormatProvider(CouchbaseSourceConfig config) {
+  public CouchbaseOutputFormatProvider(CouchbaseSinkConfig config) {
     this.conf = new ImmutableMap.Builder<String, String>()
       .put(PROPERTY_CONFIG_JSON, gson.toJson(config))
       .build();
   }
 
   @Override
-  public String getInputFormatClassName() {
-    return N1qlQueryRowInputFormat.class.getName();
+  public String getOutputFormatClassName() {
+    return CouchbaseOutputFormat.class.getName();
   }
 
   @Override
-  public Map<String, String> getInputFormatConfiguration() {
+  public Map<String, String> getOutputFormatConfiguration() {
     return conf;
   }
 }

@@ -29,8 +29,8 @@ import javax.annotation.Nullable;
  */
 public enum Consistency {
   NOT_BOUNDED("Not Bounded", ScanConsistency.NOT_BOUNDED),
-  REQUEST_PLUS("Request Plus", ScanConsistency.NOT_BOUNDED),
-  STATEMENT_PLUS("Statement Plus", ScanConsistency.NOT_BOUNDED);
+  REQUEST_PLUS("Request Plus", ScanConsistency.REQUEST_PLUS),
+  STATEMENT_PLUS("Statement Plus", ScanConsistency.STATEMENT_PLUS);
 
   private static final Map<String, Consistency> byDisplayName = Arrays.stream(values())
     .collect(Collectors.toMap(Consistency::getDisplayName, Function.identity()));
